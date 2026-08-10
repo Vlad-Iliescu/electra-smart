@@ -1,0 +1,322 @@
+# Electra Touch Line VTM.3S402.ELB04 intercom -> Home Assistant
+#
+# The terminal's C/D line is a single-wire CAN bus at ~11,364 bps. This node joins
+# it as a native CAN node: it listens for ring/answer/open/monitoring events and
+# transmits the terminal's own "open door" frame. See docs/reverse-engineering.md
+# for how the frames were decoded.
+#
+# The bus also carries the analog call audio, which appears as the line being held
+# dominant for seconds at a time, so the CAN controller stays in listen-only mode
+# except for the moment it transmits. That behaviour lives in the electra_can
+# component, not here.
+
+substitutions:
+  device_name: electra-intercom
+  friendly_name: Electra Intercom
+
+  # This terminal's Electra address, from the label on the unit: 223 = 0xDF.
+  # A terminal left at the factory default is 1, so 0x001.
+  terminal_addr: "0xDF"
+
+  # Pin map for an ESP32-C3 SuperMini (HW-466AB).
+  # GPIO11-17 are the SPI flash and GPIO18/19 are USB, so they are unavailable.
+  # GPIO2/8/9 are strapping pins and best left alone.
+  pin_can_rx: GPIO20
+  pin_can_tx: GPIO21
+  pin_speaker_relay: GPIO6
+  pin_status_led: GPIO7
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      - script.execute: update_status_led
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [electra_can]
+
+logger:
+  level: DEBUG
+  # The C3 SuperMini has no USB-UART bridge; logs come out over native USB.
+  hardware_uart: USB_SERIAL_JTAG
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: ${device_name}-fallback
+    password: !secret fallback_password
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# ---------------------------------------------------------------------------
+# The bus
+# ---------------------------------------------------------------------------
+
+canbus:
+  - platform: electra_can
+    id: electra_bus
+    can_id: ${terminal_addr}
+    rx_pin: ${pin_can_rx}
+    tx_pin: ${pin_can_tx}
+    # Solved into brp/tseg at compile time; the achieved rate is logged then and
+    # printed again in the boot log.
+    bit_rate: 11364
+    # Never transmit unless the line has been recessive this long. An audio
+    # session holds it dominant for 1.8-9 s, which this comfortably excludes.
+    idle_required: 50ms
+    tx_window_timeout: 5s
+    on_frame:
+      # can_id 0 with mask 0 matches every identifier, so one handler sees the
+      # whole bus. Frames are <originator> <command> <other party> [00].
+      - can_id: 0x000
+        can_id_mask: 0x000
+        then:
+          - lambda: |-
+              if (x.size() < 2)
+                return;
+              const uint8_t from = x[0];
+              const uint8_t cmd = x[1];
+
+              if (can_id == ${terminal_addr} && from == 0x04) {
+                if (cmd == 0x03) {                       // the panel is calling us
+                  ESP_LOGI("electra", "ring");
+                  id(ring).publish_state(true);
+                  if (id(silent).state) {
+                    id(speaker_cut).turn_on();
+                  }
+                } else if (cmd == 0x04) {                // call ended or timed out
+                  ESP_LOGI("electra", "call ended");
+                  id(ring).publish_state(false);
+                  id(speaker_cut).turn_off();
+                }
+              }
+
+              // An answer (0x05) or an open (0x07) is followed by an audio
+              // session, announced as 0x000 / 00 02. Restoring the speaker on any
+              // of them means a silenced call is still audible if it is picked up.
+              if (cmd == 0x05 || cmd == 0x07 || (can_id == 0x000 && from == 0x00 && cmd == 0x02)) {
+                id(speaker_cut).turn_off();
+              }
+
+              if (cmd == 0x07) {
+                ESP_LOGI("electra", "door opened");
+                id(ring).publish_state(false);
+              }
+
+              // Monitoring: 02 08 00 starts it, 00 08 02 ends it.
+              if (cmd == 0x08) {
+                id(monitoring).publish_state(from != 0x00);
+              }
+
+# ---------------------------------------------------------------------------
+# Entities
+# ---------------------------------------------------------------------------
+
+binary_sensor:
+  - platform: template
+    name: Ring
+    id: ring
+    device_class: occupancy
+    # The call-end frame clears this, so the timeout is only a backstop for a
+    # frame we might have missed. The measured call window is 59.7 s.
+    filters:
+      - delayed_off: 70s
+    on_press:
+      - if:
+          condition:
+            switch.is_on: auto_open
+          then:
+            - script.execute: auto_open_pending
+
+  - platform: template
+    name: Monitoring
+    id: monitoring
+    device_class: running
+    # The measured monitoring session is 8.55 s and its end frame is explicit.
+    filters:
+      - delayed_off: 12s
+
+  - platform: template
+    name: Bus idle
+    entity_category: diagnostic
+    lambda: return id(electra_bus).bus_is_idle();
+
+  - platform: template
+    name: Call audio active
+    entity_category: diagnostic
+    lambda: return id(electra_bus).audio_session_active();
+
+button:
+  - platform: template
+    name: Open door
+    icon: mdi:door-open
+    on_press:
+      - script.execute: do_open
+
+switch:
+  # The relay coil. Wired through the normally-closed contact so that
+  # de-energised means the speaker is connected: if this board loses power or
+  # crashes, the intercom rings exactly as it did from the factory.
+  - platform: gpio
+    id: speaker_cut
+    pin: ${pin_speaker_relay}
+    internal: true
+    restore_mode: ALWAYS_OFF
+
+  # Silent only arms the cut. The frame handler energises the relay for the ring
+  # and releases it as soon as a call is answered, so the coil is idle almost all
+  # of the time and an answered call is never muted.
+  - platform: template
+    name: Silent
+    id: silent
+    icon: mdi:bell-off
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - script.execute: update_status_led
+    on_turn_off:
+      - switch.turn_off: speaker_cut
+      - script.execute: update_status_led
+
+  - platform: template
+    name: Auto-open on call
+    id: auto_open
+    icon: mdi:door-open
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - script.execute: update_status_led
+    on_turn_off:
+      - script.stop: auto_open_pending
+      - script.execute: update_status_led
+
+number:
+  - platform: template
+    name: Auto-open delay
+    id: auto_open_delay
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 0
+    min_value: 0
+    max_value: 60
+    step: 1
+    unit_of_measurement: s
+    mode: box
+
+sensor:
+  - platform: template
+    name: Frames received
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return id(electra_bus).get_rx_count();
+
+  - platform: template
+    name: Frames sent
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return id(electra_bus).get_tx_count();
+
+  - platform: template
+    name: Transmit failures
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return id(electra_bus).get_tx_failure_count();
+
+  - platform: template
+    name: Bus errors
+    entity_category: diagnostic
+    state_class: total_increasing
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: return id(electra_bus).get_bus_error_count();
+
+  - platform: wifi_signal
+    name: WiFi signal
+    entity_category: diagnostic
+    update_interval: 60s
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    pin: ${pin_status_led}
+    num_leds: 1
+    chipset: WS2812
+    rgb_order: GRB
+    default_transition_length: 0s
+    # Driven by update_status_led rather than exposed on its own.
+    internal: true
+
+# ---------------------------------------------------------------------------
+# Scripts
+# ---------------------------------------------------------------------------
+
+script:
+  - id: do_open
+    mode: single
+    then:
+      # The terminal's own open announcement: originator 0x02 (terminal),
+      # command 0x07 (open), addressed to the panel at 0x01. The component
+      # queues this and sends it once the line is quiet.
+      - canbus.send:
+          canbus_id: electra_bus
+          can_id: ${terminal_addr}
+          data: [0x02, 0x07, 0x01, 0x00]
+
+  - id: auto_open_pending
+    mode: restart
+    then:
+      - delay: !lambda return (uint32_t) (id(auto_open_delay).state * 1000);
+      # Re-check: the call may have been answered or timed out during the delay.
+      - if:
+          condition:
+            binary_sensor.is_on: ring
+          then:
+            - script.execute: do_open
+
+  - id: update_status_led
+    mode: restart
+    then:
+      - lambda: |-
+          const bool s = id(silent).state;
+          const bool a = id(auto_open).state;
+          if (!s && !a) {
+            id(status_led).turn_off().perform();
+            return;
+          }
+          auto call = id(status_led).turn_on();
+          call.set_brightness(0.35f);
+          if (s && !a) {
+            call.set_rgb(1.0f, 0.0f, 0.0f);        // silent only
+          } else if (!s && a) {
+            call.set_rgb(0.0f, 1.0f, 0.0f);        // auto-open only
+          } else {
+            call.set_rgb(0.0f, 0.0f, 1.0f);        // both
+          }
+          call.perform();

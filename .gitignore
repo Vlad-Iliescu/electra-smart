@@ -1,0 +1,12 @@
+# Real credentials
+esphome/secrets.yaml
+
+# ESPHome build output
+esphome/.esphome/
+esphome/.pioenvs/
+esphome/.piolibdeps/
+
+# Local tooling
+.venv/
+__pycache__/
+*.pyc

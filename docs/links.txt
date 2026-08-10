@@ -1,0 +1,30 @@
+https://github.com/adrian-dobre/Nano33IoT-Electra-Intercom
+https://simpalean.site/interfon/electra_smart.html
+https://www.youtube.com/watch?v=IrvAJx4YZeE&t=1s
+
+# --- Added 2026-08-10 while solving the C/D protocol ---
+
+# Electra's own Touch Line catalogue - the source that revealed C/D is a CAN bus
+# ("Green LED (C/D) for working CAN BUS system", "4 CAN outputs for 4 video/audio terminals")
+https://electra.ro/uploads/download/ELT_Touch-Line-Catalogue_EN_27.02.2019_web.pdf
+
+# Independent confirmation for the sibling model ATM.0S402.ELB04:
+# "it uses can bus data transfer, the cables are +14V, C/D, GND, Vout". Still unanswered since 2023.
+https://developer.nuki.io/t/nuki-opener-intercom-electra-smart/21278
+
+# Other public Electra projects - all ANALOG models (IA003/IA01/IA02) with discrete
+# button lines, so not applicable to our CAN-based Touch Line unit. Useful only for
+# ideas on opto-isolation, enclosure fit and HA/MQTT structure.
+https://github.com/kind3r/electra-esp32-analog
+https://github.com/kind3r/esp32-analog-intercom
+https://github.com/EmanuelBalaban/intercom
+https://micro-flight.blogspot.com/2010/09/hack-interfon-electra.html
+
+# Prior art for a comparable (non-Electra) intercom bus done well in ESPHome
+https://github.com/AzonInc/Doorman
+
+# General CAN reverse-engineering methodology references
+https://pulsesecurity.co.nz/articles/ducati-696-canbus
+
+# Touch Line user manual (RO) - source of the manual quotes in reverse-engineering.md
+https://www.electra.ro/uploads/produse/manual_terminal_video_touch_line_ro.pdf
