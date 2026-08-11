@@ -33,7 +33,62 @@ top to bottom:
 
 (Corrects an earlier note in this log that listed the fourth pad as "Monitor" - monitoring is on the
 *handset* key, and the fourth pad is AUX.)
-Speaker: red/black twisted pair from the MC34018 block to the rear-cover speaker.
+### Sound path - the Silent tap point (2026-08-11)
+
+| Item | Finding |
+|---|---|
+| Emitter | **One dynamic loudspeaker**, ~40 mm, cone + magnet, screwed into the rear cover ([rear-cover-speaker-terminals.jpg](rear-cover-speaker-terminals.jpg)) |
+| Separate piezo buzzer | **None.** Nothing resembling a piezo disc anywhere on the main board ([pcb-full-board.jpg](pcb-full-board.jpg)) |
+| Speaker connection | Red/black twisted pair into **`J101`**, a small 2-pin plug (JST-style) at the lower edge of the board, pitch measured **~1.08 mm and "definitely not smaller"**, so most likely **1.25 mm** |
+| Microphone connection | Red/black twisted pair **soldered** to the `MIC+` / `MIC-` pads next to the MC34018 |
+
+The round transducer in the rear cover is the loudspeaker, not a buzzer - it has a cone, a magnet and
+a spider, where a piezo would be a flat disc. Since it is the *only* emitter in the unit, **the ring
+melody and the call audio necessarily share it**. That is exactly what the Silent design assumes, so
+the design holds: breaking the speaker leg silences the ring, and releasing it on answer restores the
+conversation.
+
+Better still, the speaker is **plugged, not soldered**. Silent can be built as a pass-through adapter
+at `J101` - our pigtail plugs into the board, the original speaker plug goes into our socket, one
+conductor passes straight through and the other runs via the relay's COM->NC contact. **Nothing on the
+intercom gets cut or unsoldered**, and the modification is fully reversible by unplugging it.
+
+### Silent proven with no hardware (2026-08-11)
+
+`J101` unplugged, then a call triggered from the panel: **the terminal made no sound at all.**
+
+That is the whole Silent feature validated before buying a single part. It confirms in one test that
+`J101` is the speaker, that the ring melody comes through the speaker rather than any hidden emitter,
+and that opening one leg of that pair is sufficient to silence a call. The relay only automates what
+was just done by hand, so the remaining risk in the Silent path is wiring, not concept.
+
+### Connector
+
+Pitch read **~1.08 mm** on the caliper, and the operator's judgement is that the true value is
+**bigger than that, not smaller**. That rules out 1.0 mm and puts it at **1.25 mm**, the next standard
+up. Reading 1.08 on a 1.25 mm part is exactly the error you get when the jaws sit slightly inside the
+pin centres, so the two observations agree.
+
+Pin-centre measurement on a connector this small is unreliable either way. The **housing length**
+across both pins is the measurement that actually discriminates, because it scales with pitch and is
+easy to place a caliper on:
+
+| Series | Pitch | 2-pin housing length |
+|---|---|---|
+| JST SH | 1.0 mm | ~4.2 mm |
+| "JST 1.25" / GH / PicoBlade | 1.25 mm | ~5.0 mm |
+| JST ZH | 1.5 mm | ~5.6 mm |
+| JST PH | 2.0 mm | ~7.9 mm |
+
+**Careful: 1.25 mm is not one family.** Genuine JST GH, Molex PicoBlade and the ubiquitous cheap
+"JST 1.25" sold for LiPo balance leads all share the pitch but differ in latch and polarisation, and
+they do not reliably intermate. Mass-produced consumer gear like this almost always uses the generic
+**"JST 1.25"** (PicoBlade-style), so that is the one to buy.
+
+**Build note:** do not crimp anything at this pitch - it needs a dedicated crimp tool. Buy a ready-made
+2-pin **male-to-female extension cable**, cut it in the middle, and put the relay's COM->NC contact in
+one conductor. That gives a plug-in pass-through with no crimping and no modification to the intercom
+at all. Buying both 1.25 mm and 1.0 mm costs a few euros and settles the pitch question by fit.
 
 ### Manual details that corroborate our captures
 
@@ -64,7 +119,7 @@ Speaker: red/black twisted pair from the MC34018 block to the rear-cover speaker
 | B6 | PIC Vdd / LD1117 out (+3V3 test pad) | ~3.3 V | | |
 | B7 | GONG1 idle / GONG2 idle | ? | **0 V / 0 V** | 2026-08-10 |
 | B8 | Open pad idle vs touched | level shift | | |
-| B9 | **C/D during an active call** (see C4) | steady 0 V = digital hold; fluctuating mid-level = analog audio superimposed | | |
+| B9 | **C/D during a session** (monitoring, button 1) | steady 0 V = digital hold; fluctuating mid-level = analog audio superimposed | **DC: 3.3 V standby -> ~0 V during the session. AC: peak seen 0.9 V.** Reads as a hard digital hold; see C6. | 2026-08-11 |
 
 ## C. Logic analyzer captures
 
@@ -165,35 +220,76 @@ The remaining ambiguity is only *which node* physically emitted each frame, whic
 probe cannot show. That does not block anything - the frames we need to *recognise* and the one we
 need to *send* are both known.
 
-## C4. The C/D line also carries the call audio - important design constraint
+## C4. The line is held dominant for seconds during a session - important design constraint
 
-Every audio session shows up as the line being held **dominant for seconds** (1.8 s while talking,
-~8.9-9.0 s after an open), and **no CAN traffic is possible during it**. The terminal *releases*
-the line before transmitting: after answering, the 1.839 s hold ended at t=14.337 and the open
-command went out at t=14.398, only 61 ms later.
+> The original title of this section claimed `C/D` carries the call audio. **B9 disproved that** -
+> see C6. The design consequences below all still stand, for reasons that never depended on audio.
 
-Since this is a 4-wire system (`+U`, `C/D`, `GND`, `Vin/Vout` with video on Vin/Vout) and 11.4 kbps
-cannot carry voice digitally, the voice is almost certainly **analog riding on `C/D`** while it sits
-"dominant" - our digital-only analyzer just reads anything below ~1.5 V as low.
+Every session shows up as the line being held **dominant for seconds** (1.8 s while talking,
+~8.9-9.0 s after an open, 8.55 s while monitoring), and **no CAN traffic is possible during it**.
+The terminal *releases* the line before transmitting: after answering, the 1.839 s hold ended at
+t=14.337 and the open command went out at t=14.398, only 61 ms later.
+
+This was originally read as analog voice riding on `C/D`, on the grounds that 11.4 kbps cannot carry
+speech digitally and the digital-only analyzer shows anything under ~1.5 V as low. The bandwidth
+argument is sound but the conclusion was not: metering the line during a session shows a hard ~0 V,
+so the voice travels elsewhere (`Vin`/`Vout` or `+U`). What the hold actually is remains unclear -
+most likely a simple "line busy / session active" signal.
 
 **Consequences for our node:**
 
-1. **Never drive `C/D` during a call.** If audio is analog, hard-pulling the line to 0 V would
-   corrupt it. Note a CAN controller in normal mode *will* try to drive: a multi-second dominant
-   run looks like a stuff error, and it answers with active error flags (6 dominant bits) until its
-   receive error counter passes 127 and it goes error-passive (after which error flags are
-   recessive and harmless). That damage window must be avoided.
+1. **Never drive `C/D` during a session.** A CAN controller in normal mode *will* try to: a
+   multi-second dominant run looks like a stuff error, so it answers with active error flags (6
+   dominant bits) until its receive error counter passes 127 and it goes error-passive (after which
+   error flags are recessive and harmless). Those error flags are real dominant bits on a bus in the
+   middle of a call - avoid that window regardless of what the hold means.
 2. **Default to listen-only** (`TWAI_MODE_LISTEN_ONLY`), switching to normal mode only for the
    moment we transmit. In listen-only the controller never drives the line at all - no ACKs, no
    error flags. This suits a bus we are only eavesdropping on 99.9% of the time.
-3. **Consider a hardware enable on TX**: a tri-state `74LVC1G125` with `OE` from a GPIO instead of
-   the `74LVC1G07`, so the ESP32 physically cannot drive the line unless we intend to.
+3. ~~Consider a hardware enable on TX~~ - dropped. See section E: the tri-state wiring that was
+   proposed here would have driven the recessive state high, and listen-only already guarantees the
+   open-drain output is high-Z.
 4. **Only transmit when the line has been recessive**, mirroring what the terminal itself does.
 5. Auto-open is unaffected: the ring capture contains **zero** dominant holds, so the line is free
    during a ring.
 
-**To verify (B9):** with a multimeter during an active call, read `C/D` to GND. A steady ~0 V means
-a hard digital hold; an intermediate, fluctuating value means analog audio is superimposed.
+**Verified in C6 - and the audio guess was wrong.** See below.
+
+## C6. B9 result: the hold is a hard digital pull, not analog audio (2026-08-11)
+
+Measured on `C/D` to GND during a monitoring session (button 1, the repeatable 8.5 s window):
+
+| Mode | Reading |
+|---|---|
+| DC, standby | ~3.3 V |
+| DC, during the session | **~0 V** |
+| AC, during the session | **0.9 V peak observed** |
+
+**The DC result settles it: the line is pulled hard to ground, not modulated.** The 0.9 V seen on the
+AC range is almost certainly the CAN bursts and the 3.3 V -> 0 V step edges rather than voice. Two
+reasons to read it that way:
+
+1. The AC figure was a *peak glimpsed*, not a settled mid-session reading, and the session opens with
+   frames plus a full-swing 3.3 V transition - exactly what makes a DMM's AC range twitch.
+2. The two readings cannot both describe voice. A genuine 0.9 V RMS signal is ~±1.3 V peak; sitting
+   on a ~0 V DC average that would have to swing **below ground**, which a pull-down-to-GND node
+   physically cannot do beyond a diode drop.
+
+So section C4's inference - that voice must be analog on `C/D` because 11.4 kbps cannot carry it
+digitally - was half right. The bandwidth argument holds, but the audio is **not on `C/D`**. On a
+4-wire system that leaves `Vin`/`Vout` (already carrying video) or `+U` as the audio path. Worth
+knowing, but it changes nothing we need to build, so it is not worth chasing.
+
+### What this changes
+
+- **RX input protection: relaxed.** The line stays within 0-3.3 V, so ~1 k in series into the RX GPIO
+  is electrically sufficient. Fit the BAT54S clamp anyway - it is a few cents and one SOT-23 against
+  the risk of a dead ESP32, and the AC reading is not clean enough to bet the board on.
+- **Listen-only default: unchanged and still correct.** The reason was never only audio. A controller
+  in normal mode reads a multi-second dominant hold as a stuff error and answers with dominant error
+  flags; that is disruptive whether or not voice is present. Listen-only avoids it entirely.
+- **"Never transmit during a hold": unchanged.** While the line is held dominant no frame can be sent
+  regardless, so waiting for a quiet line remains the right rule.
 
 ## C5. Button capture (C13) - partial result
 

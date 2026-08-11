@@ -9,13 +9,13 @@ todos:
     content: "DONE: all captures complete. C11 ring, C12 call->answer->open, C13 buttons (monitoring = 08; AUX and MUTE emit nothing, so Silent needs the relay)"
     status: completed
   - id: bom
-    content: "Acquire BOM: ESP32-C3 (SuperMini HW-466AB), MP1584EN buck, 74LVC1G07 open-drain buffer (or 74LVC1G125 wired A=GND, /OE=TX), Omron G6K-2F-Y relay, WS2812 pixel, 10k + 1k + 47R + 330R, BAT54S, MMBT2222, 1N4148, wiring"
+    content: "Acquire BOM per docs/wiring.md - all SMD except the two modules: ESP32-C3 (SuperMini HW-466AB), Pololu D24V10F3 fixed-3.3V buck, SN74LVC1G07DBVR open-drain buffer in SOT-23-5 (or 74LVC1G125 wired A=GND, /OE=TX), Omron G6K-2F-Y DC12 relay, WS2812B/SK6812 pixel, 2-pin extension cables, 0805 passives (10k + 1k + 1k + 47R + 150R + 330R + 100nF + 10uF + SMD electrolytic), BAT54S, MMBT2222, 1N4148W, wiring"
     status: in_progress
   - id: twai-bitrate
     content: "DONE: custom electra_can component - exact 11363.64 bps (brp=320, 22 TQ) plus runtime listen-only/normal switching. Config validates; compile pending"
     status: completed
   - id: power-design
-    content: Set MP1584EN to 5V/3.3V from +U/GND (no level shifting needed - bus is 3.3V)
+    content: Verify +U polarity, then check the D24V10F3 outputs 3.3V unloaded before connecting it to the SuperMini 3V3 pin (no level shifting needed - bus is 3.3V)
     status: pending
   - id: bench-listen
     content: "Bench: bring up TWAI listen-only and confirm ESPHome logs the same frames the analyzer saw, with no error counters climbing"
@@ -129,7 +129,7 @@ flowchart LR
   esp -->|"send OPEN frames 0x0DF"| cd
   esp -->|silent relay opens speaker circuit| spk[Speaker wire to MC34018]
   gong[GONG1/GONG2] -.->|optional fallback ring sense| esp
-  uPower["+U ~13.5V / GND"] -->|MP1584EN buck| esp
+  uPower["+U ~13.5V / GND"] -->|D24V10F3 fixed 3.3V buck| esp
   esp <-->|native API / WiFi| ha[Home Assistant]
   ha -->|"Auto-open toggle: on ring, fire open"| esp
 ```
@@ -140,12 +140,12 @@ flowchart LR
 
 - ESP32-C3 board (C3 SuperMini HW-466AB) - small footprint for embedding; avoid strapping pins (GPIO2/8/9) and USB pins (GPIO18/19). WiFi/OTA is a non-issue here (router ~4m, line of sight)
 - Status LED: one addressable RGB pixel (WS2812 / SK6812) - single data GPIO, encodes all toggle states by color; later coupled to an **end-glow (end-emitting) PMMA fiber, ~2 mm** (1.5 mm subtle / 3 mm bold) to surface a dot on the case face. Keep fiber core <= pixel emitter; shroud the LED-to-fiber junction with opaque heat-shrink; flat-polish both ends; drill faceplate to fiber OD. (~330 ohm inline on data, optional small decoupling cap)
-- MP1584EN buck converter - powers the board from the unit's `+U` (~13.5V) line (set to 5V into the board's 5V pin, or 3.3V into 3V3)
+- **Pololu D24V10F3** fixed-3.3V 1A buck - powers the board from the unit's `+U` (~13.5V) line, straight into the SuperMini's `3V3` pin. Fixed output removes the mis-set-trimpot hazard, and bypassing the onboard LDO takes end-to-end efficiency from ~57% to ~87%. **No 5V rail exists**, so the relay coil is the 12V version run off raw `+U`. Never connect USB and `+U` at the same time.
 - Logic analyzer (have it) - used to solve the bus; all planned captures are now complete, keep it only for debugging the bench node
 - **CAN interface: `74LVC1G125` single-gate tri-state buffer** (SOT-353/SC-70) - the TX driver onto `C/D`, with `OE` on a GPIO so we can hard-disable driving during a call. (`74LVC1G07` open-drain is the simpler alternative if we skip the OE gate.) Plus ~1k series resistor on RX and optional small clamp diodes. **Do NOT use a differential CAN transceiver** (TJA1051 / SN65HVD230) - this bus is single-wire, not CANH/CANL.
 - Level shifter NOT needed (bus and MCU are both 3.3V)
 - 1x optocoupler (e.g. PC817) + resistors - now only an *optional* fallback ring sense off GONG (primary ring detection is from the CAN bus)
-- Silent toggle: **Omron G6K-2F-Y-5VDC** (confirmed) - subminiature DPDT SMD signal relay, gold-clad bifurcated contacts (ideal for low-level audio), 10x6.5x5.2 mm, coil 5V/21mA/~100mW. Use one pole's **NC** contact (second pole = free spare). Power coil from the 5V rail; drive via NPN/FET (MMBT2222 + ~1k base R, or logic-level FET) + flyback diode (1N4148). Wire as a **no-cut inline adapter**: buzzer plugs into our board; our board pigtails into the original buzzer socket; one conductor passes through, the other is broken by COM->NC (fail-safe: buzzer rings if our board is unpowered; coil energized only while silencing).
+- Silent toggle: **Omron G6K-2F-Y DC12** - subminiature DPDT signal relay, gold-clad bifurcated contacts (ideal for low-level audio), 10x6.5x5.2 mm, ~100 mW coil, contacts 1 A switching / 2 A carry. Already SMD: Omron's `F` field = outside-L gullwing surface-mount terminals (`P` would be through-hole). Use one pole's **NC** contact (second pole = free spare). Drive the low side via NPN/FET (MMBT2222 + ~1k base R, or logic-level FET) + flyback diode (1N4148W). Run the coil off **raw `+U`** rather than the regulated rail: there is no 5 V rail in the single-3.3V-rail design, and this way the coil costs no conversion loss and keeps its switching step off the MCU supply. Coil is 1315 ohm / 9.1 mA / 100 mW at 12 V, so add **150 R in series** - straight off 13.5 V it would run at 139% of rated coil power, and the datasheet's 150% figure is instantaneous, not continuous. Wire as a **no-cut inline adapter** at `J101`: take a ready-made **2-pin male-to-female extension cable** (1.25 mm "JST 1.25" most likely; buy 1.0 mm SH as well and go by fit), cut it in half, pass one conductor straight through and break the other with COM->NC. Fail-safe: de-energised = speaker connected, so the intercom rings normally if our board is unpowered, and the coil is energised only during a silenced ring.
 - Multimeter, fine-tip soldering iron, thin silicone wire, dupont jumpers, breadboard
 - Heat-shrink / kapton tape for the permanent install
 
@@ -177,7 +177,7 @@ Risk + fallbacks:
 
 ## Phase 2 - Bench prototype
 
-1. Wire the MP1584EN from `+U`/`GND` into the ESP32-C3.
+1. Flash the ESP32-C3 on USB alone first (everything after is OTA). Then verify `+U` polarity, check the D24V10F3 puts out 3.3V unloaded, unplug USB, and wire it into the SuperMini's `3V3` pin.
 2. Wire the CAN interface: `C/D` -> series R -> TWAI **RX** GPIO; TWAI **TX** GPIO -> `74LVC1G125` (`OE` on a GPIO) -> `C/D`. Common `GND` with the unit. Silent relay on its own GPIO.
 3. **Listen-only first, with TX hard-disabled:** bring up TWAI in listen-only at 11363.6 bps, `OE` deasserted, and confirm ESPHome logs the exact same frames the logic analyzer saw (ring `04 03 01 00`, call end `04 04`, open `02 07 01 00`) with no error counters climbing. This validates bit timing with zero risk to the bus.
 4. Confirm the node survives a **call audio session** (the multi-second dominant hold) without flagging errors or driving the line.
@@ -407,7 +407,7 @@ Mount the ESP32-C3 + buck + shifter + relay inside the unit's case (there's room
 
 ## Phase 6 - Custom PCB (after everything is validated)
 
-Design a compact carrier board (KiCad): ESP32-C3 module, MP1584EN (or onboard buck), the `74LVC1G125` tri-state single-wire CAN driver + RX series/clamp network, optional opto for the GONG fallback, the silent relay + driver, the WS2812 status pixel positioned for an end-glow (~2 mm PMMA) fiber light-pipe to the case face, and clearly labeled tap pads (`C/D` / `+U` / `GND` / `GONG` / `SPK`) so install is just a few solder joints. Output Gerbers into `board/`.
+Design a compact carrier board (KiCad), all-SMD: **ESP32-C3-MINI-1** castellated module, an onboard **AP63203** fixed-3.3V buck (TSOT-23-6 + 3.9uH + 10uF/2x22uF/100nF - see `docs/wiring.md` for the full regulator BOM and why this part), the `74LVC1G125` tri-state single-wire CAN driver + RX series/clamp network, optional opto for the GONG fallback, the silent relay + driver, the WS2812 status pixel positioned for an end-glow (~2 mm PMMA) fiber light-pipe to the case face, and clearly labeled tap pads (`C/D` / `+U` / `GND` / `GONG` / `SPK`) so install is just a few solder joints. Output Gerbers into `board/`.
 
 ## Deliverables created in this repo
 
@@ -423,7 +423,7 @@ Design a compact carrier board (KiCad): ESP32-C3 module, MP1584EN (or onboard bu
 - **B9 now matters for hardware, not logic:** the RX input protection depends on how far the analog call audio swings on `C/D`. If it leaves the 0-3V3 rails, a series resistor is not enough and a BAT54S clamp is required. Measure before wiring RX.
 - Whether `0x0DF` / `02 07 01 00` alone opens the door, or the `01 01 07` / `00 02` follow-ups are needed. Safe to settle empirically in Phase 2.
 - ~~Whether Silent uses a relay or a native MUTE frame~~ - **settled: relay.** C13 proved MUTE is local to the MCU and puts nothing on the bus, so there is no frame to send and no state to read back.
-- Which conductor of the speaker pair to break, and whether the speaker connects via a socket (inline adapter, no cut) or is soldered (then we do have to cut one leg). Needs a look at the board.
+- ~~Whether the speaker connects via a socket or is soldered, and whether cutting it silences the ring~~ - **fully settled, and Silent is proven.** The speaker is plugged at `J101` (pin centres read ~1.08 mm and judged low, so most likely 1.25 mm "JST 1.25") and with it unplugged the terminal makes **no sound at all** during a call. Silent goes in as a cut-in-half extension cable with the relay in one conductor: no crimping, nothing cut on the intercom, reversible by unplugging.
 - **B9:** meter `C/D` during an active call to confirm whether the multi-second dominant hold is analog audio (fluctuating mid-level) or a hard digital hold (steady 0 V). Determines how strict the never-drive-during-a-call rule has to be.
 - The two unexplained ~0.44 ms dominant glitches seen at t=163 s in the ring capture - benign, but worth watching for on the bench in case they trip our receiver.
 

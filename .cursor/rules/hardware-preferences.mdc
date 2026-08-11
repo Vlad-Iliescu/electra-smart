@@ -1,0 +1,52 @@
+---
+description: Component and packaging preferences for hardware design in this project
+alwaysApply: true
+---
+
+# Hardware component preferences
+
+## Prefer SMD
+
+Choose surface-mount parts wherever a part exists in both forms. Only fall back to
+through-hole or a pre-built module when no surface-mount option exists — currently just
+the ESP32-C3 SuperMini and the bench regulator module, both of which are replaced with
+SMD equivalents on the custom PCB.
+
+## Do not design around hand-soldering limits
+
+**Hot air and a preheat/reflow plate are available.** Fine-pitch and bottom-terminated
+packages are fully in scope: DFN, QFN, SOT-563, 0603, 0402. Pick the package that is
+right for the circuit — size, thermals, parasitics, availability, price — not the one
+that is easiest to reach with an iron.
+
+## Reliability over unit cost
+
+This is a permanent install intended to last many years, wired into shared building
+infrastructure. Choose the part that lasts, not the cheapest that works: genuine
+manufacturers over clones, **AEC-Q / automotive grade where it costs cents more**,
+105 C >=5000 h capacitors from named brands, and generous voltage derating (aim 3x on
+ceramics). Prefer X7R to X5R.
+
+Do not propose a cheap prototype followed by a reliable rebuild. Prototype the
+**topology and firmware**, not the component grade — cheap parts make bring-up harder
+because a flaky part is indistinguishable from a design error. Split on form factor
+instead: perfboard first, then PCB, with the same good components migrating across.
+
+## Where the sweet spot is
+
+**0805 for passives** is the default: comfortable to place and rework, no real downside
+at this scale. Go smaller only when it buys something concrete, such as fitting a
+regulator's input loop tightly or a bootstrap cap close to the pins.
+
+## Suggest a package, not just a part number
+
+Component recommendations must name the package explicitly, because most of these ICs
+ship in four or five. Say `AP63203WU-7` in TSOT-23-6, or `SN74LVC1G07DBVR` in SOT-23-5,
+not just "an AP63203".
+
+## Verify against the datasheet
+
+Before quoting a pinout, coil resistance, voltage limit or recommended passive value,
+fetch the datasheet. Several earlier figures in this project were wrong from memory —
+the G6K coil resistance, its maximum-voltage rating, and the 74LVC1G07 pin order all
+had to be corrected. State explicitly when a value is unverified.

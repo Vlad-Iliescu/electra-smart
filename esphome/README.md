@@ -64,6 +64,10 @@ finds a quiet line.
 
 ## Hardware
 
+The full bill of materials, the connection diagram and the step-by-step assembly
+order live in [../docs/wiring.md](../docs/wiring.md). What follows is the summary the
+firmware itself depends on.
+
 ### Pin map (ESP32-C3 SuperMini, HW-466AB)
 
 | Signal | GPIO | Notes |
@@ -82,7 +86,11 @@ A single-wire CAN node may only ever **pull the line low** (dominant) and
 otherwise leave it alone (recessive). Two equivalent one-chip ways to do that:
 
 - **`74LVC1G07`** - non-inverting buffer with an open-drain output. Input = TWAI
-  TX, output = `C/D`. This is the obvious one.
+  TX, output = `C/D`. This is the obvious one. Order **`SN74LVC1G07DBVR`**, the
+  **SOT-23-5** package, which is the only version comfortable to hand-solder.
+  Pinout is `1` = N.C., `2` = A in, `3` = GND, `4` = Y out, `5` = VCC — note that
+  **pin 1 is not the input**. It also has TI's **Ioff** feature, so with VCC at 0 V
+  it leaks under 10 uA and an unpowered node cannot disturb the bus.
 - **`74LVC1G125`** - tri-state buffer, **input tied to GND** and **`/OE` driven by
   TWAI TX**. Because `/OE` is active-low: TX low enables the output, which drives
   the grounded input value onto the line (dominant); TX high disables it (high-Z,
@@ -106,10 +114,10 @@ could pull the bus dominant and jam the intercom. The pull-up guarantees
                         |
                        10k
                         |
-GPIO21 (TWAI TX) -------+------> 74LVC1G07 input
-                                 74LVC1G07 output --[47R]--> C/D
+GPIO21 (TWAI TX) -------+------> 74LVC1G07 pin 2 (A, input)
+                                 74LVC1G07 pin 4 (Y, open-drain) --[47R]--> C/D
 
-C/D --[1k]--> GPIO20 (TWAI RX)      + optional BAT54S clamp to 3V3 / GND
+C/D --[1k]--> GPIO20 (TWAI RX)      + BAT54S clamp to 3V3 / GND (cheap insurance)
 
 GND (unit) ------------------------ GND (board)     <- must be common
 ```
@@ -119,28 +127,56 @@ with whatever pull-up the bus has, and the dominant level must land below the
 receiver threshold (~1.5 V). Confirm the dominant level on the analyzer the first
 time the node transmits.
 
-> **Measure `C/D` during a live call before connecting RX** (check B9 in the
-> reverse-engineering log). The line carries analog audio and its amplitude is
-> still unmeasured. If it swings above 3V3 or below GND, the 1 kohm series
-> resistor alone is not enough and the BAT54S clamp becomes mandatory.
+**Input levels, measured (B9).** During a session `C/D` reads 3.3 V standby and a
+hard **~0 V** while held, so it stays inside the rails and the 1 kohm series
+resistor is electrically sufficient. The earlier assumption that the line carried
+analog call audio turned out to be wrong. Fit the BAT54S anyway: it is a few cents
+and one SOT-23, and the AC measurement (0.9 V peak, most likely the CAN bursts and
+the step edges) is not clean enough to bet an ESP32 on.
 
 ### Power
 
-MP1584EN buck from the unit's `+U` (~12 V measured) to **5 V**, into the
-SuperMini's 5 V pin. Set the output with the trimmer and verify it **before**
-connecting it to the board. No level shifting is needed anywhere: the bus, the
-intercom's PIC18F25K80 and the ESP32-C3 all run at 3.3 V.
+**Pololu D24V10F3**, a fixed **3.3 V** 1 A buck, from the unit's `+U` (~13.5 V)
+straight into the SuperMini's **`3V3`** pin. There is deliberately **no 5 V rail**.
+
+Two reasons. Feeding 5 V would route it through the SuperMini's onboard LDO, which
+is only 66% efficient dropping 5 V to 3.3 V and would put total efficiency near 57%
+instead of ~87%. And a *fixed* output removes the trimpot that could otherwise be
+mis-set or drift and put 13.5 V on the ESP32 — worth avoiding in an assembly that
+gets sealed inside a wall unit. Full reasoning and the comparison against the 2.6 A
+D24V22F3 are in [../docs/wiring.md](../docs/wiring.md).
+
+**One rule this creates: never have USB and `+U` connected simultaneously**, since
+feeding `3V3` backfeeds the onboard LDO's output. Flash on USB first, then go OTA.
+
+No level shifting is needed anywhere: the bus, the intercom's PIC18F25K80 and the
+ESP32-C3 all run at 3.3 V.
 
 ### Silent relay
 
-Omron **G6K-2F-Y-5VDC**, one pole, **COM -> NC** in series with one conductor of
-the speaker pair. De-energised means the speaker is connected, so an unpowered or
-crashed board leaves the intercom behaving exactly as stock. Drive the coil from
-5 V through an NPN or logic-level FET (MMBT2222 with ~1 k on the base, or a
-2N7002) with a 1N4148 flyback diode across the coil.
+Omron **G6K-2F-Y DC12** (the `F` is Omron's gullwing SMD terminal code), one pole,
+**COM -> NC** in series with one conductor of the speaker pair. De-energised means the
+speaker is connected, so an unpowered or crashed board leaves the intercom behaving
+exactly as stock. Drive the coil from **raw `+U`**, not the 3.3 V rail: it costs no
+conversion loss and keeps the switching step off the MCU's supply. The 12 V coil is
+1315 ohm / 9.1 mA, so add **150 R in series** to bring it to nominal on our 13.5 V
+rail. Switch the low side with an NPN or logic-level FET (MMBT2222 with ~1 k on the
+base, or a 2N7002) and a 1N4148W flyback diode across the coil.
 
-Check first whether the speaker lands on a plug — if it does, build a pass-through
-adapter and cut nothing.
+**Nothing needs cutting, and the concept is already proven.** With `J101` unplugged
+the terminal makes no sound at all during a call, so opening one leg of the speaker
+pair is all Silent needs to do.
+
+The speaker is on a small 2-pin plug at **`J101`**, measured ~1.08 mm at the pin
+centres and judged low, so most likely **1.25 mm** ("JST 1.25"). Do not crimp at that
+pitch: buy a ready-made 2-pin male-to-female extension cable, cut it in the middle,
+and put the relay's COM->NC contact in one conductor. That plugs in between the board
+and the speaker — no crimping, no modification to the intercom, reversible by
+unplugging. See [../docs/wiring.md](../docs/wiring.md) for how to confirm the pitch.
+
+The unit has a **single dynamic loudspeaker** in the rear cover and no separate
+piezo buzzer, so the ring melody and the call audio share it. That is what makes
+Silent work at all, and also why the relay must be released on answer.
 
 ## Build and flash
 
