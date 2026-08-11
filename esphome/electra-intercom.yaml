@@ -95,7 +95,18 @@ canbus:
               if (x.size() < 2)
                 return;
               const uint8_t from = x[0];
-              const uint8_t cmd = x[1];
+              uint8_t cmd = x[1];
+
+              // A command byte of 0x01 marks an acknowledgement, which carries the
+              // command it is acking in the next byte (0x0DF 01 01 07 acks an open).
+              // Acks are logged but never drive state, or every event would be
+              // handled twice.
+              const bool is_ack = (cmd == 0x01 && x.size() >= 3);
+              if (is_ack) {
+                cmd = x[2];
+                ESP_LOGD("electra", "ack of cmd 0x%02X from 0x%02X", cmd, from);
+                return;
+              }
 
               if (can_id == ${terminal_addr} && from == 0x04) {
                 if (cmd == 0x03) {                       // the panel is calling us
@@ -111,9 +122,9 @@ canbus:
                 }
               }
 
-              // An answer (0x05) or an open (0x07) is followed by an audio
-              // session, announced as 0x000 / 00 02. Restoring the speaker on any
-              // of them means a silenced call is still audible if it is picked up.
+              // An answer (0x05) or an open (0x07) is followed by an audio session,
+              // announced as 0x000 / 00 02. Restoring the speaker on any of them
+              // means a silenced call is still audible if it is picked up.
               if (cmd == 0x05 || cmd == 0x07 || (can_id == 0x000 && from == 0x00 && cmd == 0x02)) {
                 id(speaker_cut).turn_off();
               }
@@ -123,7 +134,7 @@ canbus:
                 id(ring).publish_state(false);
               }
 
-              // Monitoring: 02 08 00 starts it, 00 08 02 ends it.
+              // Monitoring: 0x0DF 02 08 00 starts it, 0x000 00 08 02 ends it.
               if (cmd == 0x08) {
                 id(monitoring).publish_state(from != 0x00);
               }

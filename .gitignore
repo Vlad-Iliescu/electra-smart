@@ -10,3 +10,4 @@ esphome/.piolibdeps/
 .venv/
 __pycache__/
 *.pyc
+build.log

@@ -185,9 +185,18 @@ Risk + fallbacks:
 6. Verify Silent: energize the relay, have the panel call, and confirm the **ring melody** is actually silenced - not just conversation audio. This also settles whether the ring and the voice share one emitter, or whether there is a separate buzzer that the speaker leg does not carry.
 7. Verify the release path: with Silent armed, answer a silenced call and confirm the speaker comes back so the conversation is audible.
 
-## Phase 3 - ESPHome firmware
+## Phase 3 - ESPHome firmware (WRITTEN AND COMPILING)
 
-Create `esphome/electra-intercom.yaml`:
+Delivered:
+
+- `esphome/components/electra_can/` - custom canbus platform: arbitrary bit rate solved into TWAI
+  registers at validation time, listen-only by default, runtime swap to normal mode to transmit only
+  once the line has been quiet. See [esphome/README.md](esphome/README.md).
+- `esphome/electra-intercom.yaml` - the full device config.
+- Verified against **ESPHome 2026.7.4 / ESP-IDF 5.5.5**: config valid, compiles with **zero
+  warnings**, RAM 33.7%, flash 53.8%.
+
+Everything below describes that config:
 
 - `canbus` (esp32_can / TWAI) at **11363.6 bps** on the `C/D` line, **listen-only by default** - the core of the integration
 - `binary_sensor` (template, ring) set by the ring frame and cleared by the **call-end** frame (`on_frame` triggers). Optional GPIO fallback off GONG.

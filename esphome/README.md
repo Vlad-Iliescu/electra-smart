@@ -154,6 +154,29 @@ The C3 SuperMini has no USB-UART bridge, so the first flash and all logging go
 over native USB (`hardware_uart: USB_SERIAL_JTAG`). After the first flash,
 everything is OTA — the router is a few metres away with line of sight.
 
+Verified to compile clean on ESPHome 2026.7.4 / ESP-IDF 5.5.5: no warnings,
+RAM 33.7%, flash 53.8%.
+
+### Two Windows-only build snags
+
+Both bit while getting the first build through, and neither is a code problem:
+
+- **Keep the build directory path short.** ESP-IDF's libsodium has deeply nested
+  source paths and the compile dies with `The filename or extension is too long`
+  under the default `esphome/.esphome/build/...`. Build somewhere shallow:
+
+```powershell
+$env:ESPHOME_BUILD_PATH = "C:\b"
+esphome compile electra-intercom.yaml
+```
+
+- **Avoid the Microsoft Store build of Python.** It virtualises `%LOCALAPPDATA%`
+  into `AppData\Local\Packages\PythonSoftwareFoundation...\LocalCache\Local`, and
+  ESPHome resolves that path inconsistently: it extracts ESP-IDF to the
+  virtualised location but hands CMake the literal one, which then fails with
+  `include could not find requested file: .../tools/cmake/project.cmake`. Install
+  Python from python.org, or junction the literal path onto the virtualised one.
+
 ## Bring-up order
 
 Do not skip straight to opening the door. Each step below is safe on its own and

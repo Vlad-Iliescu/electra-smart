@@ -135,7 +135,23 @@ then line dominant **8.975 s / 8.971 s**.
 | `05` | answer / Talk |
 | `07` | open door |
 
-Announcements are `<b0> <cmd> <b2> 00`; responses are DLC-3 `.. .. <cmd>` echoing the same code.
+Announcements are `<originator> <cmd> <other party> [00]`. Acknowledgements are the special case
+**`<originator> 01 <cmd>`**: a command byte of `01` means "this is an ack" and the command being
+acked moves into byte 2. That single rule accounts for every response frame in the catalogue:
+
+| Frame | Reading |
+|---|---|
+| `0x001` `01 01 03` | ack of `03` (call) |
+| `0x0DF` `04 01 05` | ack of `05` (answer) |
+| `0x0DF` `01 01 07` | ack of `07` (open) |
+| `0x000` `04 01 08` | ack of `08` (monitoring) |
+
+It also explains why not every DLC-3 frame is an ack: `02 08 00` and `00 08 02` have `08` in the
+command position, so they are a monitoring start and a monitoring end, not responses. Firmware must
+therefore check for the `01` marker rather than keying off the data length - reading byte 1 as the
+command unconditionally would silently misread every ack, and reading byte 2 unconditionally would
+misread monitoring.
+
 `0x000` / `00 02` is an **"engage audio"** command: in all four occurrences the line goes dominant
 within ~7 ms of it.
 
