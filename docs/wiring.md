@@ -389,7 +389,7 @@ rearrange it in Eeschema if you like, but rerunning the generator resets the pos
 
 ### Verifying it
 
-Three checks, all scriptable, and all three must pass:
+Four checks, all scriptable, and all four must pass:
 
 ```
 kicad-cli sch erc --severity-error --severity-warning --exit-code-violations \
@@ -397,6 +397,7 @@ kicad-cli sch erc --severity-error --severity-warning --exit-code-violations \
 kicad-cli sch export netlist --format kicadsexpr \
     --output pcb/board/board.net pcb/board/board.kicad_sch
 python pcb/tools/check_net.py
+python pcb/tools/check_libs.py
 ```
 
 ERC only proves the sheet is self-consistent, which is why `check_net.py` exists: it diffs
@@ -428,13 +429,21 @@ the DMP4065SQ-7 and BCW65ALT1G. Both are correct: they are the standard SOT-23 p
 (1=G/B, 2=S/E, 3=D/C) that the real parts share, and the `Value` field carries the true part
 number into the BOM.
 
-### The project-local footprint library
+### The project-local libraries
 
 Custom footprints live in `pcb/libs/electra.pretty`, registered as **`electra`** in
 `pcb/board/fp-lib-table` via `${KIPRJMOD}/../libs/electra.pretty`, with 3D models alongside
-in `pcb/libs/electra.3dshapes`. Keeping them in-tree means the board does not depend on a
-machine-specific path — unlike `U3`, which still resolves through the *global* table (see
-below). Vendor downloads are kept unmodified under `pcb/vendor/` for provenance.
+in `pcb/libs/electra.3dshapes` and symbols in `pcb/libs/electra.kicad_sym` (registered the
+same way in `pcb/board/sym-lib-table`). Vendor downloads are kept unmodified under
+`pcb/vendor/` for provenance.
+
+Keeping all of this in-tree means **the board resolves on any machine**: every symbol and
+footprint it uses comes from either this repository or a stock KiCad install, with nothing
+from a personal library folder. `python pcb/tools/check_libs.py` asserts exactly that, and
+it is worth running because nothing else catches a broken library reference — `gen_sch.py`
+reuses symbol definitions already embedded in the schematic and ERC only ever reads those
+embedded copies, so a reference that works on one machine and nowhere else still passes a
+completely clean ERC.
 
 **`F1` is done: `electra:Fuse_2410_6125Metric_Littelfuse_453`.** Its pads are the recommended
 land pattern from the Littelfuse 451/453 datasheet — **1.96 x 3.15 mm on 2.45 mm centres**,
@@ -518,9 +527,31 @@ speaker-connector section already flags:
 | `J2` | Lead to `J101` | Two solder pads or a 1x02; decide once `J101`'s housing length is measured (~4.2 mm = 1.0 mm SH, ~5.0 mm = 1.25 mm) |
 
 `J1`, the intercom tap, is also empty pending a decision on whether it is a header or
-solder pads. `U3` resolves to `libs:MODULE_ESP32-C3_SUPERMINI` from `C:/dev/kicad/libs`,
-which is registered in the **global** footprint table — so the project is not portable to
-another machine without that library.
+solder pads.
+
+**`U3` is done: `electra:ESP32-C3_SUPERMINI_SMD` + `electra:MODULE_ESP32-C3_SUPERMINI`.**
+The module was the last thing resolving through a personal library folder, and its symbol,
+footprint and 3D model are now all in-tree. The footprint mounts the module as an SMD part
+on two rows of eight 3.025 x 1.524 mm pads at 2.54 mm pitch, 15.97 mm between rows, under an
+18 x 22.7 mm body notched at the USB-C end. Its pads are named for the module's own
+silkscreen labels rather than numbered, which is why `design.py` refers to pins as `U3.3.3`
+and `U3.G`.
+
+Two things were repaired on the way in. The symbol's `Footprint` property pointed at
+`ESP32-C3_SUPERMINI_SMD:MODULE_ESP32-C3_SUPERMINI`, a footprint library that does not exist
+under that name — harmless only because `design.py` overrides the footprint anyway. And the
+**3D model was never attached**, so the module simply did not appear in the 3D view; it is
+wired up now.
+
+Seating that model is the one case where the rule used for `F1`, `L1` and `C6` does not
+apply by itself. It is Y-up like the rest of that vendor's output, so it takes the same
+`rotate -90` about X, but its *lowest* geometry sits 2.39 mm below the seating plane and
+lifting by that amount leaves the module floating. The seating plane is the module PCB
+bottom at **Y = 0**, identifiable as a 526-point planar face with the PCB top 0.9 mm above
+it as a 725-point face, so the correct offset is **zero**. What lies below are the
+through-hole pin stubs, which belong below the board and are hidden inside it — we solder
+the module SMD, without headers. The lesson generalises: pick the seating plane by finding
+the dominant planar face, not by taking the model's extreme.
 
 ### Confirm the relay contacts with a meter before ordering a board
 

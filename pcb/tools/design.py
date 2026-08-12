@@ -49,8 +49,8 @@ PARTS = {
     'C4':  ('Device:C', '22uF', C1210, 260, 105, 'right'),
     'C8':  ('Device:C', '10uF', C1206, 285, 105, 'right'),
     # --- MCU --------------------------------------------------------------
-    'U3':  ('ESP32-C3_SUPERMINI_SMD:ESP32-C3_SUPERMINI_SMD', 'ESP32-C3 SuperMini',
-            'libs:MODULE_ESP32-C3_SUPERMINI', 75, 180, 'top'),
+    'U3':  ('electra:ESP32-C3_SUPERMINI_SMD', 'ESP32-C3 SuperMini',
+            'electra:MODULE_ESP32-C3_SUPERMINI', 75, 180, 'top'),
     # --- single-wire CAN interface ----------------------------------------
     'U2':  ('74xGxx:74LVC1G07', 'SN74LVC1G07DBVR',
             'Package_TO_SOT_SMD:SOT-23-5', 160, 180, 'top'),

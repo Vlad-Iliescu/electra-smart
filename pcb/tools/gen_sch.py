@@ -25,8 +25,8 @@ from sexp import loads, kids, kid, val  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SCH = ROOT / 'pcb' / 'board' / 'board.kicad_sch'
+PROJ_SYMS = ROOT / 'pcb' / 'libs'
 KICAD_SYMS = Path(r'C:\Program Files\KiCad\10.0\share\kicad\symbols')
-USER_SYMS = Path(r'C:\dev\kicad\libs')
 
 NS = uuid.UUID('1b4e28ba-2fa1-11d2-883f-0016d3cca427')
 STUB = 5.08
@@ -107,9 +107,15 @@ def reindent(block, tabs):
 
 
 def load_lib_symbol(lib_id):
-    """Fetch a lib_symbol block from the installed or user symbol libraries."""
+    """Fetch a lib_symbol block from the project or installed symbol libraries.
+
+    The project library is searched first so an in-tree symbol always wins over
+    a same-named stock one. There is deliberately no machine-specific path here:
+    every symbol the board uses resolves from either the KiCad install or the
+    repository, which is what lets someone else generate this schematic.
+    """
     libname, symname = lib_id.split(':', 1)
-    for base in (KICAD_SYMS, USER_SYMS):
+    for base in (PROJ_SYMS, KICAD_SYMS):
         p = base / f'{libname}.kicad_sym'
         if p.exists():
             blk = find_block(p.read_text(encoding='utf-8'), symname)

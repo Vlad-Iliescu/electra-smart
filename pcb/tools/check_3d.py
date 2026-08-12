@@ -33,7 +33,8 @@ board = pcbnew.CreateEmptyBoard()
 for i, path in enumerate(sorted(LIB.glob('*.kicad_mod'))):
     fp = pcbnew.FootprintLoad(str(LIB), path.stem)
     assert fp is not None, path.stem
-    fp.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM(20 + i * 15), pcbnew.FromMM(20)))
+    # Spacing has to clear the largest part, which is the 18 x 22.7 mm module.
+    fp.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM(25 + i * 30), pcbnew.FromMM(25)))
     fp.SetReference('X%d' % (i + 1))
     board.Add(fp)
     models = [(m.m_Filename, tuple(m.m_Rotation)) for m in fp.Models()]
