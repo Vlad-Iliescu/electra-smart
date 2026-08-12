@@ -37,7 +37,10 @@ PARTS = {
             'Package_TO_SOT_SMD:TSOT-23-6', 110, 105, 'top'),
     'C5':  ('Device:C', '100nF', C0603, 150, 105, 'right'),
     'R1':  ('Device:R', '0R', R0603, 175, 105, 'right'),
-    'L1':  ('Device:L', '3.3uH', TODO_FP, 205, 105, 'right'),
+    # Pin 1 is the marked terminal: Coilcraft wants the high dv/dt node there,
+    # so it faces SW and pin 2 faces the 3V3 output. Do not flip in layout.
+    'L1':  ('Device:L', '3.3uH',
+            'electra:Inductor_Coilcraft_XGL4020', 205, 105, 'right'),
     'C3':  ('Device:C', '22uF', C1210, 235, 105, 'right'),
     'C4':  ('Device:C', '22uF', C1210, 260, 105, 'right'),
     'C8':  ('Device:C', '10uF', C1206, 285, 105, 'right'),

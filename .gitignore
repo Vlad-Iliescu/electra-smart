@@ -6,6 +6,9 @@ esphome/.esphome/
 esphome/.pioenvs/
 esphome/.piolibdeps/
 
+# Footprint preview renders (regenerate with kicad-cli fp export svg)
+pcb/libs/fp-svg/
+
 # Local tooling
 .venv/
 __pycache__/

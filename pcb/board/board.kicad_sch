@@ -7023,7 +7023,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "electra:Inductor_Coilcraft_XGL4020"
 			(at 204.47 105.41 0)
 			(hide yes)
 			(show_name no)

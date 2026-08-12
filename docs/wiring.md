@@ -448,17 +448,43 @@ Littelfuse's ±2.45 mm, agreeing to 5 µm, which is what made the pattern trustw
 reaches the BOM** — the symbol stays `Device:Fuse_Small` and the value stays `0453.250MR`.
 
 The attached 3D model is that same Bel Fuse body, kept because a 2410 fuse is
-dimensionally a 2410 fuse and it is only used for clearance checks. It is 2.79 mm tall
-against the Littelfuse's 2.69 mm, so it errs on the generous side. If it lands off-centre in
-the 3D viewer, adjust the model offset — that has not been verified.
+dimensionally a 2410 fuse and it is only used for clearance checks. Measured from the STEP
+itself it is **6.10 x 2.54 x 2.79 mm**, so it is right on length and errs 0.1 mm generous on
+height against the Littelfuse's 2.69 mm.
 
-**Two footprints still do not exist in any library and need drawing** from the manufacturer
-drawing. They are left empty in `design.py` on purpose — an empty footprint gets caught at
+**`L1` is done too: `electra:Inductor_Coilcraft_XGL4020`** — pads **0.98 x 3.4 mm on 2.37 mm
+centres**, which is verbatim the recommended land pattern on page 3 of Coilcraft doc 1529.
+
+This one came from a download for an **XFL4020-222MEC**: a different family (`XFL`, not `XGL`)
+and a different value (2.2 µH, not 3.3). Neither matters, because only the land pattern was
+taken and **every dimension of it is identical** — pad size 0.98 x 3.4 and spacing 2.37 mm
+both agree exactly, so the two Coilcraft 4020 families share one pattern. As with `F1`,
+nothing from the download reaches the BOM: the symbol stays `Device:L` and the value stays
+`3.3uH`. The 3D model is the XFL body, and measured from the STEP it is **4.0 x 4.0 x 2.1 mm**
+— exactly the XGL's own envelope, so it is honest for clearance work.
+
+**Both 3D models needed `(rotate (xyz -90 0 0))`, and neither would have been caught by ERC
+or DRC.** They are exported **Y-up**, as vendor STEP models usually are, while KiCad reads a
+model as Z-up. Left alone, each body sat **half-buried in the board and offset sideways off
+its own pads** — the inductor spanned board Z from −2 to +2 mm on a part that is 2.1 mm tall.
+Harmless for fabrication, since only the copper is manufactured, but it would quietly wreck
+any enclosure or lid-clearance check, which is the one job these models have. `pcb/tools/check_3d.py`
+renders the whole library on a scratch board so this is a look rather than a guess; **run it
+whenever a footprint gains a model.** A correct one sits *on* the board in the side view and
+*centred* on its pads from the top.
+
+> **`L1` has an orientation and it is not cosmetic.** The datasheet marks one terminal as the
+> start (short) lead and asks for **the high dv/dt node there for lowest EMI**. That is pin 1
+> in this footprint, carrying the marker dot. `design.py` already puts pin 1 on `SW` and pin 2
+> on the `3V3` output, so **do not flip `L1` in layout** to make a track shorter — it would
+> turn the winding's outer layer into an antenna on the noisiest node on the board.
+
+**One footprint still does not exist in any library and needs drawing** from the manufacturer
+drawing. It is left empty in `design.py` on purpose — an empty footprint gets caught at
 netlist import, whereas a plausible-but-wrong one silently produces an unbuildable board:
 
 | Ref | Part | What is needed |
 |---|---|---|
-| `L1` | Coilcraft XGL4020-332MEC | 4.0 x 4.0 mm, two pads, from the Coilcraft drawing |
 | `C6` | Panasonic EEH-ZA1V470P | Hybrid polymer can; confirm the case code, then use the matching `CP_Elec_*` |
 
 Note that KiCad's nearest stock fuse footprint was 2512 (6.35 x 3.2 mm) — close enough to
