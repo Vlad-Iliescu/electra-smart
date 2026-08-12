@@ -428,17 +428,41 @@ the DMP4065SQ-7 and BCW65ALT1G. Both are correct: they are the standard SOT-23 p
 (1=G/B, 2=S/E, 3=D/C) that the real parts share, and the `Value` field carries the true part
 number into the BOM.
 
-### Footprints still outstanding
+### The project-local footprint library
 
-**Three do not exist in the stock KiCad libraries and need drawing** from the manufacturer
-land pattern. They are left empty in `design.py` on purpose — an empty footprint gets caught
-at netlist import, whereas a plausible-but-wrong one silently produces an unbuildable board:
+Custom footprints live in `pcb/libs/electra.pretty`, registered as **`electra`** in
+`pcb/board/fp-lib-table` via `${KIPRJMOD}/../libs/electra.pretty`, with 3D models alongside
+in `pcb/libs/electra.3dshapes`. Keeping them in-tree means the board does not depend on a
+machine-specific path — unlike `U3`, which still resolves through the *global* table (see
+below). Vendor downloads are kept unmodified under `pcb/vendor/` for provenance.
+
+**`F1` is done: `electra:Fuse_2410_6125Metric_Littelfuse_453`.** Its pads are the recommended
+land pattern from the Littelfuse 451/453 datasheet — **1.96 x 3.15 mm on 2.45 mm centres**,
+2.95 mm inner gap, 6.86 mm overall span — and the body outline is the real 6.10 x 2.69 mm.
+
+It started from a SnapEDA download for a **Bel Fuse 0679L5000-05**, which is a *different*
+part: same 2410 body, but quick-acting and **5 A** where ours is 250 mA. Only the land
+pattern was reused, and only after checking it: SnapEDA's pad centres were ±2.455 mm against
+Littelfuse's ±2.45 mm, agreeing to 5 µm, which is what made the pattern trustworthy. The pad
+*sizes* still follow Littelfuse (SnapEDA's were 2.15 x 2.8 mm). **Nothing from that download
+reaches the BOM** — the symbol stays `Device:Fuse_Small` and the value stays `0453.250MR`.
+
+The attached 3D model is that same Bel Fuse body, kept because a 2410 fuse is
+dimensionally a 2410 fuse and it is only used for clearance checks. It is 2.79 mm tall
+against the Littelfuse's 2.69 mm, so it errs on the generous side. If it lands off-centre in
+the 3D viewer, adjust the model offset — that has not been verified.
+
+**Two footprints still do not exist in any library and need drawing** from the manufacturer
+drawing. They are left empty in `design.py` on purpose — an empty footprint gets caught at
+netlist import, whereas a plausible-but-wrong one silently produces an unbuildable board:
 
 | Ref | Part | What is needed |
 |---|---|---|
-| `F1` | Littelfuse 0453.250MR | **2410** (6.1 x 2.69 mm). KiCad only ships 2512 (6.35 x 3.2 mm) — close enough to look right and wrong enough to matter |
 | `L1` | Coilcraft XGL4020-332MEC | 4.0 x 4.0 mm, two pads, from the Coilcraft drawing |
 | `C6` | Panasonic EEH-ZA1V470P | Hybrid polymer can; confirm the case code, then use the matching `CP_Elec_*` |
+
+Note that KiCad's nearest stock fuse footprint was 2512 (6.35 x 3.2 mm) — close enough to
+2410 to look right and wrong enough to matter. That is the trap this library exists to avoid.
 
 **Two more depend on measurements we have not taken**, and are the same open questions the
 speaker-connector section already flags:

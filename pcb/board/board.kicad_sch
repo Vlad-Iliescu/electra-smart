@@ -6244,7 +6244,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "electra:Fuse_2410_6125Metric_Littelfuse_453"
 			(at 74.93 33.02 0)
 			(hide yes)
 			(show_name no)

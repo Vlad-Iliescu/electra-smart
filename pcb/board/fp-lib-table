@@ -1,3 +1,4 @@
 (fp_lib_table
 	(version 7)
+	(lib (name "electra")(type "KiCad")(uri "${KIPRJMOD}/../libs/electra.pretty")(options "")(descr "Project-local footprints for the Electra intercom board. Kept in-tree so the project does not depend on a machine-specific library path."))
 )

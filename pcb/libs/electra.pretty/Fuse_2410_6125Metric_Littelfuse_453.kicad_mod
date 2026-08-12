@@ -1,0 +1,178 @@
+(footprint "Fuse_2410_6125Metric_Littelfuse_453"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Littelfuse NANO2 451/453 series 2410 (6125 metric) surface mount fuse, body 6.10 x 2.69 x 2.69 mm. Pads are the recommended land pattern from the 451/453 datasheet: 1.96 x 3.15 mm on 2.45 mm centres, 2.95 mm inner gap, 6.86 mm overall span. Fitted part is 0453.250MR. Derived from the SnapEDA FUSC6125X279N pattern for Bel Fuse 0679L5000-05, which is the same 2410 body and whose pad centres agreed to within 0.005 mm; the pad sizes here follow Littelfuse instead.")
+	(tags "fuse 2410 6125 nano2 451 453 littelfuse")
+	(property "Reference" "REF**"
+		(at 0 -2.6 0)
+		(layer "F.SilkS")
+		(uuid "9ca1616f-b04a-4d5b-88ee-769c849b2b2f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "VAL**"
+		(at 0 2.6 0)
+		(layer "F.Fab")
+		(uuid "0b7d751a-aa21-4812-8761-8d2b2b018f07")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7da35e37-a3c3-4af6-95f7-9bae0ca6b49e")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "5d4737b7-ead6-4493-8073-715c6062f744")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -1 -1.345)
+		(end 1 -1.345)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "32f675d1-614e-41f3-ab38-1bd692702a19")
+	)
+	(fp_line
+		(start -1 1.345)
+		(end 1 1.345)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c6d0dfec-f753-4363-9254-367a3f9ea5a0")
+	)
+	(fp_line
+		(start -3.68 -1.825)
+		(end 3.68 -1.825)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "ab4b8f98-4531-4d75-ae6c-c3c7cbd003c6")
+	)
+	(fp_line
+		(start -3.68 1.825)
+		(end -3.68 -1.825)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "e9cbfb54-1f70-4f11-8528-0c433d4e4c55")
+	)
+	(fp_line
+		(start 3.68 -1.825)
+		(end 3.68 1.825)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "6b4377fb-92fa-4a72-b6d3-d2124d9b85cc")
+	)
+	(fp_line
+		(start 3.68 1.825)
+		(end -3.68 1.825)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "434ae9ae-998d-4500-8ee2-05af7579e8c3")
+	)
+	(fp_line
+		(start -3.05 -1.345)
+		(end 3.05 -1.345)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c7e8a660-1c70-4a97-bfba-cb0bc22c70d2")
+	)
+	(fp_line
+		(start -3.05 1.345)
+		(end -3.05 -1.345)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "eb6dfea6-dff1-475e-88e5-29afa2982ebd")
+	)
+	(fp_line
+		(start 3.05 -1.345)
+		(end 3.05 1.345)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9440facb-73d0-404c-8ab1-0b3fb206d4b3")
+	)
+	(fp_line
+		(start 3.05 1.345)
+		(end -3.05 1.345)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "4a8346df-7904-48ce-9153-ff4c972ea941")
+	)
+	(pad "1" smd rect
+		(at -2.45 0)
+		(size 1.96 3.15)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "e98b65c4-b933-4794-a328-b4c649c814bc")
+	)
+	(pad "2" smd rect
+		(at 2.45 0)
+		(size 1.96 3.15)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "6364705c-6ce2-4b10-9bb2-31c3b4e69260")
+	)
+	(model "${KIPRJMOD}/../libs/electra.3dshapes/Fuse_2410_6125Metric.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+	(embedded_fonts no)
+)

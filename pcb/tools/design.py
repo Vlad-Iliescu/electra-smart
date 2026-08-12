@@ -23,7 +23,8 @@ TODO_FP = ''
 PARTS = {
     # --- input protection -------------------------------------------------
     'J1':  ('Connector:Conn_01x03_Socket', 'Intercom +U/CD/GND', TODO_FP, 40, 35, 'top'),
-    'F1':  ('Device:Fuse_Small', '0453.250MR', TODO_FP, 75, 32.5, 'top'),
+    'F1':  ('Device:Fuse_Small', '0453.250MR',
+            'electra:Fuse_2410_6125Metric_Littelfuse_453', 75, 32.5, 'top'),
     'Q1':  ('Transistor_FET:DMP3099L', 'DMP4065SQ-7', SOT23, 110, 32.5, 'top'),
     'R2':  ('Device:R', '100k', R0603, 145, 45, 'right'),
     'R3':  ('Device:R', '100k', R0603, 145, 70, 'right'),
