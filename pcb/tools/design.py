@@ -29,7 +29,11 @@ PARTS = {
     'R2':  ('Device:R', '100k', R0603, 145, 45, 'right'),
     'R3':  ('Device:R', '100k', R0603, 145, 70, 'right'),
     'D1':  ('Device:D_Zener', 'SMAJ18A', 'Diode_SMD:D_SMA', 180, 32.5, 'top'),
-    'C6':  ('Device:C_Polarized', '47uF', TODO_FP, 215, 40, 'right'),
+    # Pin 1 is the + terminal and sits on the footprint's chamfered side, which
+    # is where Panasonic puts the anode. Reversing it on the 13.5 V rail vents
+    # the can, so the silkscreen "+" is not decoration.
+    'C6':  ('Device:C_Polarized', '47uF',
+            'electra:Capacitor_Panasonic_EEH-ZA_6.3x5.8', 215, 40, 'right'),
     # --- AP63203 buck -----------------------------------------------------
     'C1':  ('Device:C', '10uF', C1206, 40, 105, 'right'),
     'C2':  ('Device:C', '100nF', C0603, 65, 105, 'right'),

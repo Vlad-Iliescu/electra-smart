@@ -1,0 +1,309 @@
+(footprint "Capacitor_Panasonic_EEH-ZA_6.3x5.8"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Panasonic EEH-ZA conductive polymer hybrid aluminium electrolytic, SMD V-chip, size code D: can 6.3 mm dia x 5.8 mm, resin base 6.6 x 6.6 mm, 7.8 mm overall terminal span. Fitted part is EEH-ZA1V470P (47 uF 35 V). Pads 3.2 x 1.6 mm on 5.0 mm centres, from the SamacSys pattern for this exact part number and cross-checked against Panasonic datasheet ABA0000C1221: pad inner edge 0.9 mm from centre equals P/2, pad outer edge 4.1 mm clears the 3.9 mm terminal tip by a 0.2 mm fillet, and the base outline equals A,B = 6.6 mm. PIN 1 IS POSITIVE and sits on the chamfered side: the datasheet bottom view puts the + terminal on the side with the two cut corners and the - terminal on the square-cornered side.")
+	(tags "capacitor electrolytic polymer hybrid panasonic EEH-ZA ZA 6.3x5.8 polarized")
+	(property "Reference" "REF**"
+		(at 0 -4.4 0)
+		(layer "F.SilkS")
+		(uuid "f22aa924-d777-4986-82ed-c9243d08481e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "VAL**"
+		(at 0 4.4 0)
+		(layer "F.Fab")
+		(uuid "75a5b0df-e400-4dd4-b1dd-14d1006d6f92")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "30bac0c3-bfdb-48aa-97b4-75f3eba12227")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "8e5a7d9b-9e9a-423a-8363-1f8393c0216f")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -4.45 -1.85)
+		(end -3.85 -1.85)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2b792ac9-8928-4520-8b6f-1669637bce19")
+	)
+	(fp_line
+		(start -4.15 -2.15)
+		(end -4.15 -1.55)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "228df732-a795-4935-bcec-61875c8ba2a4")
+	)
+	(fp_line
+		(start -3.3 -2.3)
+		(end -3.3 -1.12)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "460ab6a7-c35c-485d-abad-f038b575a053")
+	)
+	(fp_line
+		(start -3.3 1.12)
+		(end -3.3 2.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "283ad80d-bc82-4783-933b-2b7d10e2339e")
+	)
+	(fp_line
+		(start -3.3 2.3)
+		(end -2.3 3.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "a1e03875-533b-4e3c-a234-c73abb00339e")
+	)
+	(fp_line
+		(start -2.3 -3.3)
+		(end -3.3 -2.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "99b2f2ff-3f33-493a-b8ee-c9a166d886e1")
+	)
+	(fp_line
+		(start -2.3 3.3)
+		(end 3.3 3.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "475253b3-2169-43a6-9837-3337727eb744")
+	)
+	(fp_line
+		(start 3.3 -3.3)
+		(end -2.3 -3.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "4e4df4f4-b351-47ff-a660-a5a2b5c3e439")
+	)
+	(fp_line
+		(start 3.3 -1.12)
+		(end 3.3 -3.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "0ace0f36-c899-47c9-8d9c-6bbe56ca47b8")
+	)
+	(fp_line
+		(start 3.3 3.3)
+		(end 3.3 1.12)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "1a330fe3-f278-4136-8970-813e41a1cbb0")
+	)
+	(fp_line
+		(start -4.35 -3.55)
+		(end 4.35 -3.55)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "2898a046-e327-437a-9dc6-b9cc04eaa4a3")
+	)
+	(fp_line
+		(start -4.35 3.55)
+		(end -4.35 -3.55)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "7f1b29b5-8751-47fd-88fc-3391cb39094a")
+	)
+	(fp_line
+		(start 4.35 -3.55)
+		(end 4.35 3.55)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "5dced7de-124f-4a98-ae25-33e0463315eb")
+	)
+	(fp_line
+		(start 4.35 3.55)
+		(end -4.35 3.55)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "47160815-0a59-494f-b3c2-9ad1fb0e5185")
+	)
+	(fp_line
+		(start -3.3 -2.3)
+		(end -3.3 2.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "43919504-afd7-4414-9b55-718659ed0d4d")
+	)
+	(fp_line
+		(start -3.3 2.3)
+		(end -2.3 3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "a282b85e-8a00-4c03-b7e2-35ce2766df5b")
+	)
+	(fp_line
+		(start -2.75 -1.35)
+		(end -2.15 -1.35)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "81d926d7-bd68-4836-9d91-ed4be8e213e5")
+	)
+	(fp_line
+		(start -2.45 -1.65)
+		(end -2.45 -1.05)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "734f5f71-ea60-4e93-8eff-1cb64c311b9f")
+	)
+	(fp_line
+		(start -2.3 -3.3)
+		(end -3.3 -2.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "22dae4c6-b32a-4787-80a1-01ff5767502e")
+	)
+	(fp_line
+		(start -2.3 3.3)
+		(end 3.3 3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "5e50f458-7a7d-43ea-9ac4-9683b08e6e4c")
+	)
+	(fp_line
+		(start 3.3 -3.3)
+		(end -2.3 -3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "e3c1f19e-83e6-4e4a-8d84-4810828e3634")
+	)
+	(fp_line
+		(start 3.3 3.3)
+		(end 3.3 -3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c6936215-8ce4-4e43-8465-4c52a2538a19")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 3.15 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "283a37c2-5603-48d4-8d5b-a6d708d220d2")
+	)
+	(pad "1" smd rect
+		(at -2.5 0)
+		(size 3.2 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "d58100e7-4292-4701-9d51-783227b754e2")
+	)
+	(pad "2" smd rect
+		(at 2.5 0)
+		(size 3.2 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "2267c791-0227-41fa-a8c4-a23096fcb163")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/../libs/electra.3dshapes/Capacitor_Panasonic_EEH-ZA_6.3x5.8.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -90 0 0)
+		)
+	)
+)

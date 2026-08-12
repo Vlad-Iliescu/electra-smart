@@ -479,13 +479,32 @@ whenever a footprint gains a model.** A correct one sits *on* the board in the s
 > on the `3V3` output, so **do not flip `L1` in layout** to make a track shorter — it would
 > turn the winding's outer layer into an antenna on the noisiest node on the board.
 
-**One footprint still does not exist in any library and needs drawing** from the manufacturer
-drawing. It is left empty in `design.py` on purpose — an empty footprint gets caught at
-netlist import, whereas a plausible-but-wrong one silently produces an unbuildable board:
+**`C6` is done as well: `electra:Capacitor_Panasonic_EEH-ZA_6.3x5.8`** — pads **3.2 x 1.6 mm on
+5.0 mm centres**, a 6.6 x 6.6 mm base with the chamfer on the pin 1 side, and the Ø6.3 mm can
+drawn on the fab layer.
 
-| Ref | Part | What is needed |
-|---|---|---|
-| `C6` | Panasonic EEH-ZA1V470P | Hybrid polymer can; confirm the case code, then use the matching `CP_Elec_*` |
+The case code question is settled: Panasonic's ZA characteristics list gives `EEHZA1V470P` as
+47 µF / 35 V, **Ø6.3 x 5.8 mm, size code D**, ESR 60 mΩ — which confirms both the dimensions
+this document already quoted and the 60 mΩ figure the endurance argument rests on. Size D's
+base is **A, B = 6.6 mm**, not 6.3; 6.3 is the can diameter, and the footprint outline is the
+base.
+
+This came from a SamacSys download for the exact part number, but it was still checked against
+the datasheet rather than trusted, and it reconciles precisely: the pads run from **0.9 mm to
+4.1 mm** from centre, where **P/2 = 0.9 mm** is the terminal inner edge and **H max/2 = 3.9 mm**
+is the terminal tip. So the pattern is the real terminal plus a 0.2 mm fillet allowance
+outward. KiCad's stock `CP_Elec_6.3x5.8` was the alternative and was **rejected**: it is
+3.5 x 1.6 mm on 5.4 mm centres, which is 0.4 mm wider in spacing, and its own description says
+it was generated for a **Nichicon** part.
+
+> **`C6` is polarised and pin 1 is the positive terminal.** Panasonic's bottom-view drawing
+> puts ⊕ on the side with the **two chamfered corners** and ⊖ on the square-cornered side, so
+> the chamfer marks the anode. `design.py` has pin 1 on `VIN` and pin 2 on `GND`, which is
+> correct, and the footprint carries a **"+" on both silkscreen and fab** next to pin 1.
+> Three independent sources agree on this: the datasheet symbols, KiCad's stock convention for
+> the same package, and the vendor 3D model — whose black band, which the datasheet defines as
+> the *negative* marking, renders over pad 2. Reversing this part on the 13.5 V rail vents the
+> can, so it is worth the redundancy.
 
 Note that KiCad's nearest stock fuse footprint was 2512 (6.35 x 3.2 mm) — close enough to
 2410 to look right and wrong enough to matter. That is the trap this library exists to avoid.
