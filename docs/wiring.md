@@ -69,16 +69,16 @@ section for which choices actually matter and which are theatre.
 | **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here**, so no crimping on that side. From the 10-set AliExpress kit - **fit-test one against the speaker plug before drawing the footprint** |
 | **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note |
 | **F1** | 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
-| **R5** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
-| **R9** | 1 | 10 k resistor, same part as R5 | 0603 | Base-to-emitter on `Q2` - see the Vces note. **So this part is 2 per board** |
-| **R7** | 1 | 1 k resistor `CRCW06031K00JNEA` | 0603 | CAN RX series limit |
-| **R8** | 1 | 1 k resistor, same part as R7 | 0603 | `Q2` base. **So this part is 2 per board** |
-| **R6** | 1 | 47 R resistor `CRCW060347R0JNEA` | 0603 | CAN TX series limit |
-| **R10** | 1 | 150 R resistor `CRCW0603150RJNEA` | 0603 | `K1` coil dropper: 13.5 V across 1315 + 150 ohm draws 9.2 mA, so the 12 V coil sees **12.12 V** |
-| **R11** | 1 | 330 R resistor `CRCW0603330RJNEA` | 0603 | `LED1` data line. Buy 2 if you want the two-plain-LED fallback available - at **(3.3 - 2.0) / 330 = 3.9 mA** it doubles as their series resistor |
-| **C6** | 1 | 100 nF ceramic | 0603, 50 V | Decoupling at `U2`. **Same part as C1b and C3** (`CGA3E3X8R1H104K080AB`), so that part is **3 per board** in total |
-| **C4** | 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
-| **C7** | 1 | 10 uF ceramic | 1206 | On 3V3 next to `U3`, for WiFi bursts. **Same part as C1** (`CGA5L3X5R1H106M160AB`), so that part is **2 per board**. Its 50 V rating means almost no DC-bias derating at 3.3 V, so you get a true 10 uF |
+| **R4** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
+| **R8** | 1 | 10 k resistor, same part as R4 | 0603 | Base-to-emitter on `Q2` - see the Vces note. **So this part is 2 per board** |
+| **R6** | 1 | 1 k resistor `CRCW06031K00JNEA` | 0603 | CAN RX series limit |
+| **R7** | 1 | 1 k resistor, same part as R6 | 0603 | `Q2` base. **So this part is 2 per board** |
+| **R5** | 1 | 47 R resistor `CRCW060347R0JNEA` | 0603 | CAN TX series limit |
+| **R9** | 1 | 150 R resistor `CRCW0603150RJNEA` | 0603 | `K1` coil dropper: 13.5 V across 1315 + 150 ohm draws 9.2 mA, so the 12 V coil sees **12.12 V** |
+| **R10** | 1 | 330 R resistor `CRCW0603330RJNEA` | 0603 | `LED1` data line. Buy 2 if you want the two-plain-LED fallback available - at **(3.3 - 2.0) / 330 = 3.9 mA** it doubles as their series resistor |
+| **C7** | 1 | 100 nF ceramic | 0603, 50 V | Decoupling at `U2`. **Same part as C2 and C5** (`CGA3E3X8R1H104K080AB`), so that part is **3 per board** in total |
+| **C6** | 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
+| **C8** | 1 | 10 uF ceramic | 1206 | On 3V3 next to `U3`, for WiFi bursts. **Same part as C1** (`CGA5L3X5R1H106M160AB`), so that part is **2 per board**. Its 50 V rating means almost no DC-bias derating at 3.3 V, so you get a true 10 uF |
 | **J1** | - | 3-way tap to the intercom | wire at bench, header on the PCB | `+U`, `C/D`, `GND`. No part to buy yet, but the designator is fixed so the pinout has a name |
 | - | - | 26-28 AWG silicone wire | | Thin and flexible; there is not much room |
 | - | - | Kapton tape, heat-shrink | | Insulating the install |
@@ -95,30 +95,55 @@ SOT-23s. Fill it in for every line. The full allocation:
 
 | Block | Designators |
 |---|---|
-| Regulator | `U1` buck, `L1`, `C1` in, `C1b` in bypass, `C2a`/`C2b` out, `C3` bootstrap, `R1` bootstrap series, `C4` bulk |
-| Input protection | `F1` fuse, `Q1` reverse-polarity P-FET, `R3`/`R4` gate divider, `D1` TVS |
-| CAN interface | `U2` buffer, `R5` TX pull-up, `R6` TX series, `R7` RX series, `D3` RX clamp |
-| Relay / Silent | `K1` relay, `Q2` NPN, `R8` base, `R9` base-emitter, `R10` coil dropper, `D2` flyback |
-| Indicator | `LED1`, `R11` data series |
-| MCU | `U3`, `C6` buffer decoupling, `C7` 3V3 bulk |
+| Regulator | `U1` buck, `L1`, `C1` in, `C2` in bypass, `C3`/`C4` out, `C5` bootstrap, `R1` bootstrap series, `C6` bulk |
+| Input protection | `F1` fuse, `Q1` reverse-polarity P-FET, `R2`/`R3` gate divider, `D1` TVS |
+| CAN interface | `U2` buffer, `R4` TX pull-up, `R5` TX series, `R6` RX series, `D3` RX clamp |
+| Relay / Silent | `K1` relay, `Q2` NPN, `R7` base, `R8` base-emitter, `R9` coil dropper, `D2` flyback |
+| Indicator | `LED1`, `R10` data series |
+| MCU | `U3`, `C7` buffer decoupling, `C8` 3V3 bulk |
 | Connectors | `J1` intercom tap, `J2` speaker in, `J3` speaker out |
 
-**`R2` and `C5` are deliberately absent.** They were the input RC snubber, removed once the
-damping calculation showed the fuse resistance and wiring already overdamp the input LC.
-Leaving the gap rather than renumbering keeps this document consistent with earlier
-revisions — do not reuse them for something else.
+**There are no gaps in the sequence, and the designators changed on 12 Aug 2026.** KiCad
+cannot represent references like `C1b` or `C2a`, so the whole scheme was collapsed to plain
+integers to match `pcb/board/board.kicad_sch`. An earlier revision also left `R2` and `C5`
+unused — they were an input RC snubber, dropped once the damping calculation showed the fuse
+resistance and wiring already overdamp the input LC — and both were reused by the renumber.
+**If you are reading an older revision or an older Digi-Key label, its designators will not
+match this table.** The translation is:
+
+| Old | New | Part |
+|---|---|---|
+| `C1` | `C1` | 10 uF input bulk |
+| `C1b` | `C2` | 100 nF input bypass |
+| `C2a`, `C2b` | `C3`, `C4` | 22 uF output pair |
+| `C3` | `C5` | 100 nF bootstrap |
+| `C4` | `C6` | 47 uF hybrid bulk |
+| `C6` | `C7` | 100 nF buffer decoupling |
+| `C7` | `C8` | 10 uF 3V3 bulk |
+| `R1` | `R1` | 0 R bootstrap series |
+| `R3`, `R4` | `R2`, `R3` | Q1 gate divider |
+| `R5` | `R4` | CAN TX pull-up |
+| `R6` | `R5` | CAN TX series |
+| `R7` | `R6` | CAN RX series |
+| `R8` | `R7` | Q2 base |
+| `R9` | `R8` | Q2 base-emitter |
+| `R10` | `R9` | coil dropper |
+| `R11` | `R10` | LED data series |
+
+Everything else — `U1`-`U3`, `L1`, `D1`-`D3`, `Q1`, `Q2`, `F1`, `K1`, `J1`-`J3`, `LED1` —
+kept its designator.
 
 **Three lines need a compound reference, and it is easy to get wrong** because one part
 number serves more than one position:
 
 | Part number | Reference to enter | Per board |
 |---|---|---|
-| `CGA3E3X8R1H104K080AB` (100 nF) | `C1b,C3,C6` | **3** |
-| `CGA5L3X5R1H106M160AB` (10 uF) | `C1,C7` | **2** |
-| `CGA6P1X7R1C226M250AC` (22 uF) | `C2a,C2b` | **2** |
-| `CRCW060310K0JNEA` (10 k) | `R5,R9` | **2** |
-| `CRCW06031K00JNEA` (1 k) | `R7,R8` | **2** |
-| `CRCW0603100KJNEA` (100 k) | `R3,R4` | **2** |
+| `CGA3E3X8R1H104K080AB` (100 nF) | `C2,C5,C7` | **3** |
+| `CGA5L3X5R1H106M160AB` (10 uF) | `C1,C8` | **2** |
+| `CGA6P1X7R1C226M250AC` (22 uF) | `C3,C4` | **2** |
+| `CRCW060310K0JNEA` (10 k) | `R4,R8` | **2** |
+| `CRCW06031K00JNEA` (1 k) | `R6,R7` | **2** |
+| `CRCW0603100KJNEA` (100 k) | `R2,R3` | **2** |
 
 And **the three `R1` candidates should not all be labelled `R1`**, or you will end up with
 three identically-labelled bags holding 0 R, 10 R and 22 R. Use `R1 FIT 0R`,
@@ -127,8 +152,8 @@ three identically-labelled bags holding 0 R, 10 R and 22 R. Use `R1 FIT 0R`,
 ### What was actually ordered, 12 Aug 2026
 
 **Every designator is covered.** The buy landed as three orders, and the cart builds
-**5 complete boards** — limited simultaneously by `U1`, `L1`, `C2`, `F1`, `Q1`, `K1`,
-`R3/R4`, `R5/R9` and `R7/R8`, all at exactly five sets. The 0603 resistors, `D1`-`D3`,
+**5 complete boards** — limited simultaneously by `U1`, `L1`, `C3`/`C4`, `F1`, `Q1`, `K1`,
+`R2/R3`, `R4/R8` and `R6/R7`, all at exactly five sets. The 0603 resistors, `D1`-`D3`,
 `U2`, `Q2` and the 10 uF run to ten.
 
 | Order | Contents | Cost |
@@ -159,7 +184,7 @@ but both differ from what this document names:
 
 **The LCSC 0805 100 nF has nothing to do with this project.** It was a long-standing
 backorder that the `LED1` purchase made a convenient moment to clear. Recorded here only so
-that nobody later mistakes it for `C1b`/`C3`/`C6`, which it must not be used for: wrong
+that nobody later mistakes it for `C2`/`C5`/`C7`, which it must not be used for: wrong
 package for a layout drawn around 0603, X7R rather than X8R, and the Yageo `CC` series is
 not AEC-Q200.
 
@@ -197,10 +222,10 @@ speaker connector section for the two checks to run before drawing the footprint
   adapter for the buffer. The only genuinely fiddly part is the buffer.
 - **All resistors are 0603 in the Vishay `CRCW0603` family**, `J` tolerance, AEC-Q200. An
   0805 assortment book is the easier option for hand-wiring, but buying the five values in
-  the same family as R1/R3/R4 means **one part family across bench and PCB**, no duplicate
+  the same family as R1/R2/R3 means **one part family across bench and PCB**, no duplicate
   purchase, and automotive-grade parts throughout for about 0.14 lei each.
 - **Three capacitor positions are shared part numbers, which is easy to under-order.** The
-  100 nF `CGA3E3X8R1H104K080AB` serves C1b, C3 *and* the buffer decoupling — **3 per
+  100 nF `CGA3E3X8R1H104K080AB` serves C2, C5 *and* the buffer decoupling — **3 per
   board**. The 10 uF `CGA5L3X5R1H106M160AB` serves C1 *and* the 3V3 bulk — **2 per board**.
   The designator map above lists all of them.
 - **Check which `1N4148W` package actually arrived.** The Digi-Key part `1N4148WRHG` is
@@ -342,6 +367,109 @@ completely dead.
 - **Optocoupler (PC817) on `GONG1`/`GONG2`**: no longer needed. Ring detection comes
   off the CAN bus. Only worth adding as a fallback if bus receive proves unreliable.
 
+## The KiCad project
+
+Lives in `pcb/board/`. **The schematic is generated, not hand-drawn.** Editing
+`board.kicad_sch` in Eeschema works, but the next generator run overwrites it — so component
+values, footprints and connectivity belong in `pcb/tools/design.py`, which is the source of
+truth for the netlist.
+
+```
+python pcb/tools/gen_sch.py --check    # validate the declaration, write nothing
+python pcb/tools/gen_sch.py            # emit pcb/board/board.kicad_sch
+```
+
+Symbol definitions are harvested from whatever is already embedded in the sheet and only
+fetched from the installed KiCad libraries when missing, so regeneration does not silently
+swap a symbol under you. Every symbol is placed unrotated and connectivity is expressed
+purely with net labels on 5.08 mm stubs. That is deliberate: with no rotation the
+library-to-sheet coordinate transform is just `x + px, y - py`, which removes the single
+most likely source of a silently wrong netlist. **The layout is functional, not pretty** —
+rearrange it in Eeschema if you like, but rerunning the generator resets the positions.
+
+### Verifying it
+
+Three checks, all scriptable, and all three must pass:
+
+```
+kicad-cli sch erc --severity-error --severity-warning --exit-code-violations \
+    --output pcb/board/erc.rpt pcb/board/board.kicad_sch
+kicad-cli sch export netlist --format kicadsexpr \
+    --output pcb/board/board.net pcb/board/board.kicad_sch
+python pcb/tools/check_net.py
+```
+
+ERC only proves the sheet is self-consistent, which is why `check_net.py` exists: it diffs
+the netlist KiCad actually exported against `design.py` and fails on any difference. The
+generator additionally **asserts pin names against the library symbols** — `design.py`
+records that `D1.1` must be called `K`, `Q1.2` must be `S`, and so on — so a polarity or
+pinout slip fails generation loudly instead of reaching the board. It also refuses to emit
+unless every pin of every part is either on a net or explicitly marked no-connect.
+
+Current state: **0 ERC violations, 36 symbols, 22 nets, 88 wired pins, 14 no-connects**, and
+the exported netlist matches `design.py` exactly.
+
+### Two symbols are deliberately not the obvious ones
+
+- **`U2` is `74xGxx:74LVC1G07`, and it matters.** An earlier revision of the sheet used
+  `SN74LVC1G00DBV`, which is a **two-input NAND**: pin 1 is a second input where the real
+  1G07 has `NC`, and its output carries an inverting bubble. Wiring TX to pin 1 would have
+  gone to a pin that does not exist on the part, and the inversion contradicts the polarity
+  the firmware depends on. The correct symbol also types pin 4 as `open_collector`, so ERC
+  expects the `R4` pull-up instead of flagging the net.
+- **`D1` is `Device:D_Zener` valued `SMAJ18A`, not `Diode:SMAJ18A`.** KiCad's `SMAJ18A`
+  symbol extends `SM6T6V8A` and exposes pins `A1`/`A2` — it is drawn as a *bidirectional*
+  TVS. SMAJ18**A** is unidirectional (the `CA` suffix is the bidirectional one), so that
+  symbol misrepresents the part on a polarised SMA footprint. `D_Zener` gives proper `K`/`A`
+  pins, which is what makes the footprint orientation and silkscreen unambiguous.
+
+`Q1` uses `Transistor_FET:DMP3099L` and `Q2` uses `Transistor_BJT:BC850` as stand-ins for
+the DMP4065SQ-7 and BCW65ALT1G. Both are correct: they are the standard SOT-23 pinouts
+(1=G/B, 2=S/E, 3=D/C) that the real parts share, and the `Value` field carries the true part
+number into the BOM.
+
+### Footprints still outstanding
+
+**Three do not exist in the stock KiCad libraries and need drawing** from the manufacturer
+land pattern. They are left empty in `design.py` on purpose — an empty footprint gets caught
+at netlist import, whereas a plausible-but-wrong one silently produces an unbuildable board:
+
+| Ref | Part | What is needed |
+|---|---|---|
+| `F1` | Littelfuse 0453.250MR | **2410** (6.1 x 2.69 mm). KiCad only ships 2512 (6.35 x 3.2 mm) — close enough to look right and wrong enough to matter |
+| `L1` | Coilcraft XGL4020-332MEC | 4.0 x 4.0 mm, two pads, from the Coilcraft drawing |
+| `C6` | Panasonic EEH-ZA1V470P | Hybrid polymer can; confirm the case code, then use the matching `CP_Elec_*` |
+
+**Two more depend on measurements we have not taken**, and are the same open questions the
+speaker-connector section already flags:
+
+| Ref | Part | Blocked on |
+|---|---|---|
+| `J3` | Speaker header | Placeholder is `JST_GH_BM02B-GHS-TBT_1x02-1MP_P1.25mm_Vertical`. Right **pitch** at last — the earlier sheet had a 2.00 mm JWPF footprint — but generic "JST 1.25" parts often differ from genuine GH in the mounting tabs, so fit-test the kit header against the speaker's factory plug |
+| `J2` | Lead to `J101` | Two solder pads or a 1x02; decide once `J101`'s housing length is measured (~4.2 mm = 1.0 mm SH, ~5.0 mm = 1.25 mm) |
+
+`J1`, the intercom tap, is also empty pending a decision on whether it is a header or
+solder pads. `U3` resolves to `libs:MODULE_ESP32-C3_SUPERMINI` from `C:/dev/kicad/libs`,
+which is registered in the **global** footprint table — so the project is not portable to
+another machine without that library.
+
+### Confirm the relay contacts with a meter before ordering a board
+
+`design.py` wires the speaker through `K1` pins **3-4** and **6-5**, taking 3 and 6 as the
+commons and 4 and 5 as the normally-closed contacts. The KiCad symbol's geometry supports
+that reading, but the Omron datasheet gives the terminal arrangement only as an image, and
+web sources contradict each other on which contact is NC.
+
+**This is the fail-safe, so verify it rather than trusting the schematic:** with the coil
+unpowered, check continuity from 3 to 4 and from 6 to 5. Both should read closed. If instead
+3-2 and 6-7 are closed, swap the `SPK_SW` net onto pins 2 and 7 in `design.py` and
+regenerate. De-energised **must** mean speaker connected.
+
+Both poles are wired in parallel on purpose — it halves contact resistance and adds
+redundancy on a low-level audio signal. The trade is deliberate: a contact that fails to
+open breaks Silent mode, which merely means you hear the ring, whereas a contact that fails
+to close would break the intercom.
+
 ## Power architecture
 
 **One 3.3 V rail, plus raw `+U` for the relay coil. There is no 5 V rail anywhere.**
@@ -426,33 +554,33 @@ than the Pololu board for our use, not just smaller.
 | U1 | **AP63203QWU-7** | fixed 3.3 V, 2 A, 3.8-32 V in | **TSOT-23-6** | The whole regulator. `Q` = AEC-Q100 Grade 1, see reliability notes. Digi-Key `31-AP63203QWU-7CT-ND` (Cut Tape) |
 | L1 | **Coilcraft XGL4020-332MEC** | 3.3 uH, **Isat 4.8 A**, Irms 6.6 A, DCR 34 mohm max | 4.0 x 4.0 x **2.1 mm** | AEC-Q200 Grade 1, ultra-low AC loss. Digi-Key `4652-XGL4020-332MEC-ND`, **Marketplace item** - see supplier note |
 | C1 | **TDK CGA5L3X5R1H106M160AB** | **10 uF / 50 V**, X5R, ±20% | 1206, 1.6 mm | Input bulk. AEC-Q200, -55/**+85 C**. Digi-Key `445-12883-1-ND`. Shortest possible loop to VIN/GND. See the X5R note |
-| C1b | **TDK CGA3E3X8R1H104K080AB** | **100 nF / 50 V**, X8R, ±10% | 0603, 0.8 mm | Input HF bypass, **closer to the pins than C1**. AEC-Q200, -55/+150 C. Digi-Key `445-12606-1-ND`. Present on the official EVM - see note |
-| C2a, C2b | **TDK CGA6P1X7R1C226M250AC** | **22 uF / 16 V**, X7R, ±20%, **two of them** | **1210**, 2.5 mm | Output. Datasheet specifies 2 x 22 uF. AEC-Q200, -55/+125 C. Digi-Key `445-5723-1-ND`. **1210, not 1206** - see note |
-| C3 | **TDK CGA3E3X8R1H104K080AB** | **100 nF / 50 V**, X8R, ±10% | 0603, 0.8 mm | Bootstrap, BST to SW. Must be ceramic. **Same part as C1b**, so order 2 per board - see note |
-| R1 | **Panasonic ERJ-3GEY0R00V** | **0 ohm** jumper fitted, 1 A, 100 mW | 0603 | In series with C3. AEC-Q200, -55/+155 C. Digi-Key `P0.0GCT-ND`. An EMI knob - **also buy 10R (`541-10GCT-ND`) and 22R (`P22GCT-ND`)**, see below |
-| C4 | **Panasonic EEH-ZA1V470P** | **47 uF / 35 V**, polymer hybrid, **105 C 10000 h**, ESR 60 mohm | SMD V-chip **6.3 x 5.8 mm** | Bulk and LC damping on the feed from `+U`. AEC-Q200, fails **open**. Digi-Key `P15454CT-ND`. See the endurance note |
+| C2 | **TDK CGA3E3X8R1H104K080AB** | **100 nF / 50 V**, X8R, ±10% | 0603, 0.8 mm | Input HF bypass, **closer to the pins than C1**. AEC-Q200, -55/+150 C. Digi-Key `445-12606-1-ND`. Present on the official EVM - see note |
+| C3, C4 | **TDK CGA6P1X7R1C226M250AC** | **22 uF / 16 V**, X7R, ±20%, **two of them** | **1210**, 2.5 mm | Output. Datasheet specifies 2 x 22 uF. AEC-Q200, -55/+125 C. Digi-Key `445-5723-1-ND`. **1210, not 1206** - see note |
+| C5 | **TDK CGA3E3X8R1H104K080AB** | **100 nF / 50 V**, X8R, ±10% | 0603, 0.8 mm | Bootstrap, BST to SW. Must be ceramic. **Same part as C2**, so order 2 per board - see note |
+| R1 | **Panasonic ERJ-3GEY0R00V** | **0 ohm** jumper fitted, 1 A, 100 mW | 0603 | In series with C5. AEC-Q200, -55/+155 C. Digi-Key `P0.0GCT-ND`. An EMI knob - **also buy 10R (`541-10GCT-ND`) and 22R (`P22GCT-ND`)**, see below |
+| C6 | **Panasonic EEH-ZA1V470P** | **47 uF / 35 V**, polymer hybrid, **105 C 10000 h**, ESR 60 mohm | SMD V-chip **6.3 x 5.8 mm** | Bulk and LC damping on the feed from `+U`. AEC-Q200, fails **open**. Digi-Key `P15454CT-ND`. See the endurance note |
 | F1 | **Littelfuse 0453.250MR** | **250 mA**, 125 V AC/DC, fast, I2t **15.8 mA2s** | **2410**, 6.1 x 2.69 mm | On the `+U` tap. **Protects the intercom from us.** 50 A breaking, -55/+125 C, UL/CSA. Digi-Key `F5688CT-ND`. Not 1206 and not slow-blow - see note |
-| D1 | TVS | **SMAJ18A** | SMA (DO-214AC) | Transient clamp on `VIN`, **fitted behind Q1**. V_C 29.2 V max, matched to C4. Digi-Key `SMAJ18ABCT-ND` - see note |
+| D1 | TVS | **SMAJ18A** | SMA (DO-214AC) | Transient clamp on `VIN`, **fitted behind Q1**. V_C 29.2 V max, matched to C6. Digi-Key `SMAJ18ABCT-ND` - see note |
 | Q1 | **Diodes DMP4065SQ-7** | **-40 V**, Vgs ±20 V, 100 mohm max, **-20 A pulsed** | SOT-23 | Reverse-polarity ideal-diode. **AEC-Q101 + PPAP.** Digi-Key `DMP4065SQ-7DICT-ND` (`-7` = tape). Drain to F1, source to `VIN` - see note |
-| R3, R4 | **Vishay Dale CRCW0603100KJNEA** x2 | **100 k** ±5%, 0.1 W, 75 V | 0603 | Gate divider for Q1. **Not a plain pull-down** - it halves Vgs so a TVS clamp cannot exceed ±20 V. AEC-Q200, -55/+155 C. Digi-Key `541-100KGCT-ND`. See note |
+| R2, R3 | **Vishay Dale CRCW0603100KJNEA** x2 | **100 k** ±5%, 0.1 W, 75 V | 0603 | Gate divider for Q1. **Not a plain pull-down** - it halves Vgs so a TVS clamp cannot exceed ±20 V. AEC-Q200, -55/+155 C. Digi-Key `541-100KGCT-ND`. See note |
 
 Wiring beyond that is trivial, because the fixed-output variant has its divider inside:
 
 - **`FB` connects straight to `VOUT`.** No divider, no resistors, no tolerance stack.
 - **`EN` ties to `VIN`.** The datasheet permits leaving it open, but tying it is
   deterministic and costs nothing. `EN` is rated to 35 V so 13.5 V is fine directly.
-- `VIN` -> C1b then C1 then C4 (smallest nearest the pin), `SW` -> L1 -> `VOUT`,
-  C3 from `SW` to `BST`, `GND` to plane.
-- **Input chain order is fixed: `+U` -> F1 -> Q1 -> D1 -> C4/C1/C1b -> `VIN`.** D1 must sit
+- `VIN` -> C2 then C1 then C6 (smallest nearest the pin), `SW` -> L1 -> `VOUT`,
+  C5 from `SW` to `BST`, `GND` to plane.
+- **Input chain order is fixed: `+U` -> F1 -> Q1 -> D1 -> C6/C1/C2 -> `VIN`.** D1 must sit
   *behind* Q1. In front of it, reversed wiring would forward-bias the unidirectional
   SMAJ18A into a dead short and blow F1 on a mistake Q1 exists to make harmless.
 
 Fourteen components, no unpopulated positions. The regulator core itself — U1, L1, the four
-ceramics, R1 and C4 — fits in roughly 10 x 8 mm; F1, D1, Q1 and the gate divider form a
+ceramics, R1 and C6 — fits in roughly 10 x 8 mm; F1, D1, Q1 and the gate divider form a
 separate input-protection block ahead of it.
 
-**Per-board multiples, since three positions are easy to under-order:** C1b and C3 are the
-same part number, so that is **2 per board**; C2a and C2b are **2 per board**; R3 and R4 are
+**Per-board multiples, since three positions are easy to under-order:** C2 and C5 are the
+same part number, so that is **2 per board**; C3 and C4 are **2 per board**; R2 and R3 are
 **2 per board**. Everything else is one. The R1 values are alternatives, not three fitted
 parts. Note also that **F1 is consumed by the bench build** before any PCB exists, so buy at
 least one more fuse than boards.
@@ -520,7 +648,7 @@ we draw a fraction of an amp. **Do not filter on it.**
 | AC loss characterised | **yes, at 1 MHz** | no |
 | Price | ~4-6x | 3.38 lei |
 
-The only thing the Bourns wins on is 0.3 mm of height, which is free to give up — C4,
+The only thing the Bourns wins on is 0.3 mm of height, which is free to give up — C6,
 the electrolytic, is 5.8 mm tall, so the inductor is nowhere near the limiting part.
 **Bourns SRP4020CC-3R3M is a perfectly good fallback** if the Coilcraft is unavailable;
 it is carbonyl composite with soft saturation and its datasheet even lists "low
@@ -537,7 +665,7 @@ For reference, at 13.5 V in, 3.3 V out, 1.1 MHz and 3.3 uH the ripple is ~0.69 A
 peak, so peak inductor current at a 0.5 A load is ~0.84 A. Normal operation uses well
 under a quarter of the part's capability; the headroom is entirely for the fault case.
 
-### Choosing the input capacitor (C1 / C1b)
+### Choosing the input capacitor (C1 / C2)
 
 **The 50 V rating is set by the TVS clamp, not by the 13.5 V rail.**
 
@@ -564,11 +692,11 @@ which a 1206 MLCC exceeds by more than an order of magnitude. Do not be tempted 
 "compensate" for bias derating by going to 1210 or paralleling more bulk. Fit the
 recommended 10 uF, undersized on paper, and it is still enormous margin.
 
-**Add C1b, the 100 nF 0603.** Our earlier BOM had only the bulk cap. The official
+**Add C2, the 100 nF 0603.** Our earlier BOM had only the bulk cap. The official
 AP63203WU-EVM fits a 100 nF / 50 V 0603 at the input *in addition* to the 10 uF, and it
 is worth copying: a 1206 has too much ESL to snub the fast dI/dt edges that the bulk cap
 cannot follow. Place it **closer to VIN/GND than C1**, with C1 just outside it and the
-electrolytic C4 furthest away. On a board that lives millimetres from capacitive touch
+electrolytic C6 furthest away. On a board that lives millimetres from capacitive touch
 pads and a WiFi antenna, cents of HF bypass are the cheapest EMI insurance available.
 
 X7R rather than the EVM's "X5R/X7R" for the usual reason: X5R stops at 85 C and this part
@@ -582,7 +710,7 @@ part actually fitted is **`CGA5L3X5R1H106M160AB`** — X5R instead of X7R, other
 
 Substituting is low risk provided one rule holds: **keep the 50 V rating**, because C1 sits
 directly across the SMAJ18A clamp at up to 29.2 V. Everything else has slack, for the
-reasons above — the 10 uF figure is sized for a 2 A load against our 0.15 A, and C4 already
+reasons above — the 10 uF figure is sized for a 2 A load against our 0.15 A, and C6 already
 supplies bulk on VIN, leaving this part responsible only for fast dI/dt.
 
 **Beware NRND part numbers.** `C3216X5R1H106M160AB` looks like a fine 10 uF / 50 V / 1206
@@ -633,7 +761,7 @@ for the 1210 output caps, and this board gets screwed into a wall box where it m
 flexed on install. Not worth a dedicated second shipment, but take it if ordering from
 Farnell anyway.
 
-### Choosing the output capacitors (C2a / C2b)
+### Choosing the output capacitors (C3 / C4)
 
 **These are 1210, not 1206 — the earlier BOM was wrong, because 22 uF / 16 V / X7R does
 not exist in 1206.** This is not a stocking accident. Murata's own press release
@@ -652,37 +780,37 @@ Three ways out, and the trade-off is worth understanding:
 
 The 1210 wins on two counts beyond dielectric grade. First, **a regulator failure puts
 the full input rail on the output.** If the AP63203's high-side switch ever fails short,
-C2 sees ~13.5 V. That destroys the ESP32 either way, but a 16 V cap survives it while a
+`C3` and `C4` see ~13.5 V. That destroys the ESP32 either way, but a 16 V cap survives it while a
 10 V cap may fail short and burn — and this box is screwed to a wall in a shared
 building. Second, **DC bias derating actually matters on the output**, unlike on the
 input: the AP63203 has fixed internal compensation designed around 2 x 22 uF, so loop
 behaviour depends on the *effective* capacitance. A 16 V part at 3.3 V bias keeps more of
 its nominal value than a 10 V part does, landing closer to what the compensation expects.
 
-The cost is 0.9 mm of extra width each and 2.5 mm of height. Neither binds: C4, the
+The cost is 0.9 mm of extra width each and 2.5 mm of height. Neither binds: C6, the
 electrolytic, is 5.8 mm tall and sets the profile on its own.
 
 Stock at the time of writing was 4,044 at Digi-Key and 1,484 at TME, so this is
 comfortably sourced, and TME is the EU fallback if Digi-Key runs dry.
 
-### The two 0603 ceramics (C1b input bypass, C3 bootstrap)
+### The two 0603 ceramics (C2 input bypass, C5 bootstrap)
 
 **One part number in two positions.** The BOM previously called for 25 V on the bootstrap
 cap and 50 V on the input bypass. They are now both the 50 V part, deliberately: 50 V is
-required at C1b because it sits behind the TVS clamp, and paying the same few cents at C3
+required at C2 because it sits behind the TVS clamp, and paying the same few cents at C5
 collapses two BOM lines into one, gets a better price break, and removes any chance of
 fitting the wrong one. Buy ten of `445-5666-1-ND` and forget about it — 10 cents each at
 one, 7.5 cents at ten.
 
-**50 V is genuine overkill at C3, which is fine.** The bootstrap cap sits between `BST`
+**50 V is genuine overkill at C5, which is fine.** The bootstrap cap sits between `BST`
 and `SW`. Its *pin* swings to VIN plus the boot voltage relative to ground, but the
 capacitor itself only ever sees the differential boot rail of a few volts, so a 10 V part
 would be electrically sufficient. Commonality is worth more than that optimisation.
 
 **One reason not to skimp on it anyway:** the datasheet notes that boot refresh — turning
-the low-side switch on for 220 ns to recharge C3 when its voltage falls below 2.3 V —
+the low-side switch on for 220 ns to recharge C5 when its voltage falls below 2.3 V —
 happens during long periods of non-switching, specifically calling out **PFM at light
-load**. That is not an edge case for us, it is our permanent operating point. C3 is the
+load**. That is not an edge case for us, it is our permanent operating point. C5 is the
 part that gets exercised most in this design, so a 50 V X7R holding essentially its full
 nominal capacitance at a few volts of bias is the right call.
 
@@ -710,8 +838,8 @@ is the right call: availability beats a preference for a dielectric grade whose 
 advantage we do not need. Nothing is compromised by it.
 
 The one parameter not compared between them is the DC bias curve, where X8R formulations
-can behave differently. It does not matter at either position — C3 sits at a few volts of
-boot rail and C1b is an HF bypass whose exact value is irrelevant — but if this part number
+can behave differently. It does not matter at either position — C5 sits at a few volts of
+boot rail and C2 is an HF bypass whose exact value is irrelevant — but if this part number
 ever migrates to a position where capacitance is load-bearing, check the curve first.
 
 **Keep the 0 ohm bootstrap resistor footprint (R1).** Diodes' own evaluation board
@@ -744,7 +872,7 @@ estimate - Diodes does not publish Qg for the integrated FET.) Even with 22 ohm 
 dissipation stays a small fraction of the rating.
 
 There is also room to *use* this knob: at 13.5 V in and 3.3 V out the duty cycle is only
-24%, so C3 has the remaining 76% of every cycle to recharge. Slowing the high-side turn-on
+24%, so C5 has the remaining 76% of every cycle to recharge. Slowing the high-side turn-on
 does eat into the bootstrap refresh window, but at this duty ratio there is plenty to
 spare.
 
@@ -753,7 +881,7 @@ spare.
 This is a permanent install in a sealed plastic box on a wall, wired into shared
 building infrastructure. The failure modes that matter are not the obvious ones.
 
-**1. C4 is the only real wear-out item, and this is why it is a hybrid.** Everything else
+**1. C6 is the only real wear-out item, and this is why it is a hybrid.** Everything else
 here is solid-state or barely operated.
 
 The plan was a wet electrolytic at ">=5000 h". **That specification cannot be met in this
@@ -768,7 +896,7 @@ rating, which cuts both ways:
 | 55 C | **~7 years** | ~36 years |
 
 A 2000 h part lands exactly at our ten-year target with no margin, and under it if the box
-runs warm. So C4 is a **Panasonic EEH-ZA1V470P** polymer hybrid: same 47 uF, same 35 V,
+runs warm. So C6 is a **Panasonic EEH-ZA1V470P** polymer hybrid: same 47 uF, same 35 V,
 same 6.3 x 5.8 mm footprint, AEC-Q200, but **10000 h at 105 C**. A drop-in that turns the
 one wear-out item into a fifty-year part.
 
@@ -784,7 +912,7 @@ one.
 
 The resonance is the feed inductance against ~54 uF of input capacitance, so f0 lands
 between 12 and 50 kHz. Damping factor is `Q = sqrt(L/C) / R`, and R is the whole series loop:
-**F1's 0.577 ohm**, Q1's ~0.1 ohm, C4's ESR, plus the wiring:
+**F1's 0.577 ohm**, Q1's ~0.1 ohm, C6's ESR, plus the wiring:
 
 | Feed | L | Z0 = sqrt(L/C) | Total R | Q |
 |---|---|---|---|---|
@@ -807,7 +935,7 @@ resonance of characteristic impedance under 1 ohm. That RC damps MHz-scale edge 
 different phenomenon. An effective snubber at this frequency would need tens of uF — that
 is, another electrolytic.
 
-So C4 needs no insurance. **If ringing ever did appear**, the fix is ESR, not an RC: fit a
+So C6 needs no insurance. **If ringing ever did appear**, the fix is ESR, not an RC: fit a
 wet `EEE-FK1V470P`, which shares the identical 6.3 x 5.8 mm land pattern.
 
 Wet fallback if preferred: `EEE-FK1V470P` (Panasonic, 360 mohm, AEC-Q200, 6.3 x 5.8 mm),
@@ -890,12 +1018,12 @@ NANO2 anyway, and carrying 3 ohm post-trip resistance plus hold current that der
 temperature. Decisively, **a PTC trips at about 2x hold**, so a 300 mA device passes 600 mA
 of fault current before acting — worse protection for the intercom than a 250 mA fuse,
 which is this part's entire purpose. A fuse also fails as a clean, permanent open, the same
-property that recommended the hybrid at C4.
+property that recommended the hybrid at C6.
 
 **D1, the TVS**, clamps transients picked up by building wiring, which can be
 substantial on long runs. About twenty cents.
 
-**Match D1 to C4.** C4 is a **35 V** part, chosen because a 50 V SMD electrolytic at 47 uF
+**Match D1 to C6.** C6 is a **35 V** part, chosen because a 50 V SMD electrolytic at 47 uF
 runs roughly 8 mm diameter and 10 mm tall — the largest object in the regulator and awkward
 in the space behind the intercom PCB. At 35 V it is **6.3 x 5.8 mm** and still gives 2.6x
 derating on 13.5 V.
@@ -928,7 +1056,7 @@ arriving while the wiring is reversed**, where D1 sits behind an open channel an
 clamp, leaving most of that transient across drain-source. A -30 V part against a ~29 V
 event has no margin.
 
-**The gate needs R3/R4 as a divider, not a plain pull-down to GND.** With the gate tied
+**The gate needs R2/R3 as a divider, not a plain pull-down to GND.** With the gate tied
 straight to GND, Vgs equals the whole rail — and during a clamp that is **-29.2 V against
 this part's ±20 V rating**, destroying the device meant to be protecting us. Two 100 k
 resistors, source-to-gate and gate-to-GND, halve it: **-6.75 V normally** and -14.6 V at
@@ -975,7 +1103,7 @@ first flash happens on the bench and everything after that is OTA.
 | Status LED data | 7 | out | via 330 R |
 | *spare* | 0, 1, 3, 4, 5, 10 | | available if needed |
 
-Unavailable on the C3: **GPIO11-17** are the SPI flash, **GPIO18/19** are the native
+Unavailable on the C5: **GPIO11-17** are the SPI flash, **GPIO18/19** are the native
 USB, and **GPIO2/8/9** are strapping pins best left alone.
 
 ## Where to tap on the unit
