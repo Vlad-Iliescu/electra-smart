@@ -43,11 +43,12 @@ below. Coilcraft also runs a free-sample programme worth using for prototype qua
 
 ## Shopping list
 
-**Everything is SMD except the two modules**, which only exist as modules. Passives are
-specified as **0805** because that is the comfortable size, not because anything finer
-is off the table — hot air and a preheat plate are available, so DFN/QFN and 0603 are
-fair game where they buy something. The regulator section of the PCB uses 1206 and
-0603 for exactly that reason.
+**Everything is SMD except the two modules**, which only exist as modules. Passives ended
+up **0603 for everything except the bulk capacitors**, which are 1206 and 1210. Earlier
+drafts said 0805 as the comfortable default; standardising on the Vishay `CRCW0603` family
+was worth the smaller size because it means **one resistor family across bench and PCB**,
+no duplicate purchase, and AEC-Q200 parts throughout. Hot air and a preheat plate are
+available, so nothing finer is off the table either.
 
 **Buy quality, not cheap.** This is a permanent install that should outlive several
 phone upgrades, and the entire bill of materials is around EUR 50 at good-part prices —
@@ -55,33 +56,127 @@ there is no meaningful saving available by economising. Genuine Omron relay, gen
 or Nexperia logic, named-brand capacitors. See the reliability notes in the power
 section for which choices actually matter and which are theatre.
 
-| Qty | Part | Package | Purpose |
-|---|---|---|---|
-| 1 | **ESP32-C3 SuperMini** | module | The node. Small enough to hide behind the PCB |
-| 1 | **Pololu D24V10F3** (#2830) | module, **fixed 3.3 V**, 1 A, 3.4-36 V in | 13.5 V from `+U` straight to 3.3 V. See the power section for why fixed and why 1 A |
-| 1 | **SN74LVC1G07DBVR** (TI) | **SOT-23-5 (DBV)** - not SC-70 | Open-drain CAN TX driver. Package matters, see below |
-| 1 | **Omron G6K-2F-Y DC12** | **SMD gullwing**, DPDT, gold bifurcated contacts | Speaker cut for Silent. `F` in the part number *is* the surface-mount terminal code |
-| 1 | **MMBT2222** or **2N7002** | SOT-23 | Relay coil driver |
-| 1 | **1N4148W** | **SOD-123** | Coil flyback. `W` = SOD-123, `WS` = smaller SOD-323 |
-| 1 | **BAT54S** | SOT-23, *series* pair | Clamps the CAN RX pin to the rails |
-| 1 | **WS2812B** (5050) or **SK6812 MINI** (3535) | SMD, single pixel | Status LED. The 3535 is smaller and couples to fibre more neatly |
-| 1 | **"JST 1.25" 2-pin extension cable** | pre-crimped | Speaker pass-through. Buy the 1.0 mm SH version too - see note |
-| 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
-| 1 | 10 k resistor | 0805 | **Mandatory** pull-up on CAN TX |
-| 1 | 1 k resistor | 0805 | CAN RX series limit |
-| 1 | 47 R resistor | 0805 | CAN TX series limit |
-| 1 | 1 k resistor | 0805 | Relay transistor base |
-| 1 | 150 R resistor | 0805 | Relay coil dropper, so a 12 V coil sees 12 V on a 13.5 V rail |
-| 1 | 330 R resistor | 0805 | WS2812 data line |
-| 1 | 100 nF ceramic X7R | 0805, 50 V | Decoupling at the buffer |
-| 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
-| 1 | 10 uF ceramic X7R | 0805, 16 V+ | On 3V3 next to the ESP32, for WiFi bursts |
-| - | 26-28 AWG silicone wire | | Thin and flexible; there is not much room |
-| - | Kapton tape, heat-shrink | | Insulating the install |
-| - | 2 mm end-glow PMMA fibre | + opaque heat-shrink | Light pipe to the case face (later) |
+| Ref | Qty | Part | Package | Purpose |
+|---|---|---|---|---|
+| **U3** | 1 | **ESP32-C3 SuperMini** | module | The node. Small enough to hide behind the PCB. `ESP32-C3-MINI-1` takes this designator on the PCB |
+| - | 1 | **Any 12->3.3 V buck module** | **prefer fixed output**, >=300 mA | Bench stage only, so no designator - it stands in for the whole `U1` block. Reference part is the Pololu D24V10F3 (#2830), but any module does. **Buck, not linear** - a linear would burn 0.6 W in a sealed box. **If adjustable, meter it at 3.3 V before it touches the 3V3 pin** - see the one rule below |
+| **U2** | 1 | **SN74LVC1G07DBVR** (TI) | **SOT-23-5 (DBV)** - not SC-70 | Open-drain CAN TX driver. Package matters, see below |
+| **K1** | 1 | **Omron G6K-2F-Y DC12** | **SMD gullwing**, DPDT, gold bifurcated contacts | Speaker cut for Silent. `F` in the part number *is* the surface-mount terminal code. Coil **1315 ohm / 9.1 mA / ~100 mW**. Add `-TR` for tape, else 50-piece tube |
+| **Q2** | 1 | **onsemi BCW65ALT1G** | SOT-23 | Relay coil driver. **NPN, not a MOSFET** - see note. Vceo 32 V / Vces 60 V, Ic 800 mA, **hFE >=75 at Ic = 10 mA** which is our exact operating point |
+| **D2** | 1 | **1N4148W** | **SOD-123**, or SOD-123F if that is what stock offers | `K1` coil flyback. `W` = SOD-123, `WS` = smaller SOD-323. **Check which you actually received** - see the footprint note |
+| **D3** | 1 | **onsemi BAT54SLT1G** | SOT-23, *series* pair | Clamps the CAN RX pin to the rails. 30 V, 200 mA, Vf **0.32 V max at 1 mA**, Ct 10 pF. **If `SBAT54SLT1G` is also in stock take that instead** - leading `S` = AEC-Q101 + PPAP, same die, see note |
+| **LED1** | 1 | **`WS2812B`**, ideally `V6` | SMD single pixel, **3535 `MINI`** or 5050 | Status LED. **3.3-5.5 V, so in spec on our rail** - and `V6` specifically optimises constant-current drive at 3.3 V. **Not an `SK6812`** (3.5 V / 3.7 V) and **not `WS2812E`/`S`** (3.8 V). Take the `B` over the `C` for its internal cap and reverse-connection protection. **Not a distributor part**: AliExpress or similar, buy a handful and bench-check one - see the LED note |
+| **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here**, so no crimping on that side. From the 10-set AliExpress kit - **fit-test one against the speaker plug before drawing the footprint** |
+| **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note |
+| **F1** | 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
+| **R5** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
+| **R9** | 1 | 10 k resistor, same part as R5 | 0603 | Base-to-emitter on `Q2` - see the Vces note. **So this part is 2 per board** |
+| **R7** | 1 | 1 k resistor `CRCW06031K00JNEA` | 0603 | CAN RX series limit |
+| **R8** | 1 | 1 k resistor, same part as R7 | 0603 | `Q2` base. **So this part is 2 per board** |
+| **R6** | 1 | 47 R resistor `CRCW060347R0JNEA` | 0603 | CAN TX series limit |
+| **R10** | 1 | 150 R resistor `CRCW0603150RJNEA` | 0603 | `K1` coil dropper: 13.5 V across 1315 + 150 ohm draws 9.2 mA, so the 12 V coil sees **12.12 V** |
+| **R11** | 1 | 330 R resistor `CRCW0603330RJNEA` | 0603 | `LED1` data line. Buy 2 if you want the two-plain-LED fallback available - at **(3.3 - 2.0) / 330 = 3.9 mA** it doubles as their series resistor |
+| **C6** | 1 | 100 nF ceramic | 0603, 50 V | Decoupling at `U2`. **Same part as C1b and C3** (`CGA3E3X8R1H104K080AB`), so that part is **3 per board** in total |
+| **C4** | 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
+| **C7** | 1 | 10 uF ceramic | 1206 | On 3V3 next to `U3`, for WiFi bursts. **Same part as C1** (`CGA5L3X5R1H106M160AB`), so that part is **2 per board**. Its 50 V rating means almost no DC-bias derating at 3.3 V, so you get a true 10 uF |
+| **J1** | - | 3-way tap to the intercom | wire at bench, header on the PCB | `+U`, `C/D`, `GND`. No part to buy yet, but the designator is fixed so the pinout has a name |
+| - | - | 26-28 AWG silicone wire | | Thin and flexible; there is not much room |
+| - | - | Kapton tape, heat-shrink | | Insulating the install |
+| - | - | 2 mm end-glow PMMA fibre | + opaque heat-shrink | Light pipe to the case face (later) |
 
 **Do not buy a differential CAN transceiver** (TJA1051, SN65HVD230, MCP2551). This
 bus is single-wire; those parts need CANH/CANL and will not work.
+
+### Designator map, and what to type into Digi-Key's Customer Reference
+
+Digi-Key prints the **Customer Reference** field on the bag label, so filling it in is the
+difference between a labelled parts drawer and twenty identical anti-static bags of black
+SOT-23s. Fill it in for every line. The full allocation:
+
+| Block | Designators |
+|---|---|
+| Regulator | `U1` buck, `L1`, `C1` in, `C1b` in bypass, `C2a`/`C2b` out, `C3` bootstrap, `R1` bootstrap series, `C4` bulk |
+| Input protection | `F1` fuse, `Q1` reverse-polarity P-FET, `R3`/`R4` gate divider, `D1` TVS |
+| CAN interface | `U2` buffer, `R5` TX pull-up, `R6` TX series, `R7` RX series, `D3` RX clamp |
+| Relay / Silent | `K1` relay, `Q2` NPN, `R8` base, `R9` base-emitter, `R10` coil dropper, `D2` flyback |
+| Indicator | `LED1`, `R11` data series |
+| MCU | `U3`, `C6` buffer decoupling, `C7` 3V3 bulk |
+| Connectors | `J1` intercom tap, `J2` speaker in, `J3` speaker out |
+
+**`R2` and `C5` are deliberately absent.** They were the input RC snubber, removed once the
+damping calculation showed the fuse resistance and wiring already overdamp the input LC.
+Leaving the gap rather than renumbering keeps this document consistent with earlier
+revisions — do not reuse them for something else.
+
+**Three lines need a compound reference, and it is easy to get wrong** because one part
+number serves more than one position:
+
+| Part number | Reference to enter | Per board |
+|---|---|---|
+| `CGA3E3X8R1H104K080AB` (100 nF) | `C1b,C3,C6` | **3** |
+| `CGA5L3X5R1H106M160AB` (10 uF) | `C1,C7` | **2** |
+| `CGA6P1X7R1C226M250AC` (22 uF) | `C2a,C2b` | **2** |
+| `CRCW060310K0JNEA` (10 k) | `R5,R9` | **2** |
+| `CRCW06031K00JNEA` (1 k) | `R7,R8` | **2** |
+| `CRCW0603100KJNEA` (100 k) | `R3,R4` | **2** |
+
+And **the three `R1` candidates should not all be labelled `R1`**, or you will end up with
+three identically-labelled bags holding 0 R, 10 R and 22 R. Use `R1 FIT 0R`,
+`R1 ALT 10R` and `R1 ALT 22R`. Only the 0 R is fitted; the other two are the EMI knob.
+
+### What was actually ordered, 12 Aug 2026
+
+**Every designator is covered.** The buy landed as three orders, and the cart builds
+**5 complete boards** — limited simultaneously by `U1`, `L1`, `C2`, `F1`, `Q1`, `K1`,
+`R3/R4`, `R5/R9` and `R7/R8`, all at exactly five sets. The 0603 resistors, `D1`-`D3`,
+`U2`, `Q2` and the 10 uF run to ten.
+
+| Order | Contents | Cost |
+|---|---|---|
+| Digi-Key #100930216 | 23 lines, `U1` through `Q2` | 400.01 lei |
+| Digi-Key #100930214 | `L1` alone — the Marketplace split the caveat predicted | 61.70 lei |
+| LCSC | `LED1` **`WS2812B-V6`** x100, plus 0805 100 nF bench stock | $10.57 |
+| AliExpress | 1.25 mm connector kit — **see the caveat below** | 66.64 lei |
+
+**`LED1` came out better than specified.** LCSC lists `C52917433` explicitly as
+**`WS2812B-V6`** from Worldsemi, so the revision is confirmed on the invoice rather than
+guessed at — which was the one real risk in the LED note. The bench check is still worth
+doing, but the part is now known to be the revision whose PCN claims constant-current drive
+at 3.3 V, not a lottery ticket from a marketplace listing.
+
+**Two substitutions arrived through the order rather than by choice.** Neither is a problem,
+but both differ from what this document names:
+
+- **`U2` is a `UMW` part, not TI.** Digi-Key carries UMW as a legitimate line, so this is a
+  second-source brand bought through an authorised distributor rather than a broker
+  counterfeit — the risk the sourcing note warns about does not apply. It is still not TI
+  silicon. For an open-drain buffer toggling at 11.4 kbps the electrical demands are close
+  to trivial, so the exposure is low; just expect different top marking from the TI
+  datasheet, and keep one of the ten as a known-good spare.
+- **`K1`'s manufacturer reads "Aratas (Formerly Omron Components)".** That is the genuine
+  article. Omron divested its Electronic Components business and it now trades as Aratas;
+  the part number, dies and datasheet are unchanged. No action.
+
+**The LCSC 0805 100 nF has nothing to do with this project.** It was a long-standing
+backorder that the `LED1` purchase made a convenient moment to clear. Recorded here only so
+that nobody later mistakes it for `C1b`/`C3`/`C6`, which it must not be used for: wrong
+package for a layout drawn around 0603, X7R rather than X8R, and the Yageo `CC` series is
+not AEC-Q200.
+
+Still outstanding:
+
+| Ref | Part | Status |
+|---|---|---|
+| `U3` | ESP32-C3 SuperMini (bench), `ESP32-C3-MINI-1` (PCB) | Owned / later |
+| - | 26-28 AWG silicone wire, Kapton, heat-shrink, 2 mm PMMA fibre | Consumables |
+
+**The AliExpress 1.25 mm kit covers both speaker connectors outright.** The *2P, SMD
+Vertical* variant is a board-mount header plus housings and loose terminals, which is exactly
+what the arrangement below needs. The vertical header becomes `J3` and **the speaker's own
+factory plug mates straight into it**, so nothing is crimped on the speaker side at all; the
+`J101` end is a housing and two terminals crimped onto a flying lead, and **the Engineer
+PA-09 needed for that is already on hand**. So the electrical BOM is complete — see the
+speaker connector section for the two checks to run before drawing the footprint.
 
 ### Notes on the SMD choices
 
@@ -98,12 +193,21 @@ bus is single-wire; those parts need CANH/CANL and will not work.
   raises the Q and can make the ringing *worse*. The hybrid specified trades ESR
   (60 mohm, not 360 mohm) for 5x the endurance, and the endurance note shows why that
   costs nothing: F1's series resistance leaves the input LC overdamped regardless.
-- **For prototyping**, either a small SMD-footprint protoboard (SOT-23 + 0805 pads) or
-  a SOT-23-5 breakout adapter for the buffer. The only genuinely fiddly part is the
-  buffer; everything else is 0805 or SOT-23.
-- **Buy passives as an 0805 assortment book** rather than individually. The five
-  resistor values and three capacitor values here cost less as one kit than as eight
-  line items, and you will want spares of 0805 parts anyway.
+- **For prototyping**, either a small SMD-footprint protoboard or a SOT-23-5 breakout
+  adapter for the buffer. The only genuinely fiddly part is the buffer.
+- **All resistors are 0603 in the Vishay `CRCW0603` family**, `J` tolerance, AEC-Q200. An
+  0805 assortment book is the easier option for hand-wiring, but buying the five values in
+  the same family as R1/R3/R4 means **one part family across bench and PCB**, no duplicate
+  purchase, and automotive-grade parts throughout for about 0.14 lei each.
+- **Three capacitor positions are shared part numbers, which is easy to under-order.** The
+  100 nF `CGA3E3X8R1H104K080AB` serves C1b, C3 *and* the buffer decoupling — **3 per
+  board**. The 10 uF `CGA5L3X5R1H106M160AB` serves C1 *and* the 3V3 bulk — **2 per board**.
+  The designator map above lists all of them.
+- **Check which `1N4148W` package actually arrived.** The Digi-Key part `1N4148WRHG` is
+  **SOD-123F**, not the SOD-123 this document originally specified. Electrically identical
+  and equally hand-solderable, but SOD-123F has **flat leads and a different land pattern**,
+  so it needs the matching footprint on the PCB. Harmless now, a rework later if `D2` gets
+  drawn from the wrong library.
 - **When the custom PCB comes**, the two modules are what to replace: the SuperMini
   becomes an **ESP32-C3-MINI-1** castellated SMD module, and the regulator becomes a
   discrete **AP63203** design — see the regulator BOM in the power section below.
@@ -113,21 +217,70 @@ small enough that losing or cooking one is a matter of when, not if.
 
 ### The speaker connector
 
-`J101` measured ~1.08 mm at the pin centres, judged to be on the low side of true, so
-**1.25 mm** is the best estimate — the next standard up, and exactly the error you get
-when the caliper jaws sit inside the pin centres. Confirm by **housing length** across
-both pins instead, which scales with pitch and is far easier to measure: **~4.2 mm**
-means 1.0 mm SH, **~5.0 mm** means 1.25 mm, ~5.6 mm means 1.5 mm ZH.
+**The speaker plugs into our board, and our board reaches back to `J101` on a flying
+lead.** Earlier drafts had this as a cut-in-half extension cable with the relay contact
+spliced into one conductor. The revised arrangement is better in every respect:
 
-Two traps here:
+```
+   intercom J101 (male header)
+        |
+        |  J2 = 2-pin female housing, terminals crimped with the PA-09,
+        |       free wire ends soldered to our board
+        v
+   [ OUR BOARD ]   relay K1 pole 1 sits in ONE conductor as a PCB trace:
+        |            J2 pin 1 --> COM,  NC --> J3 pin 1,  NO unused
+        |            J2 pin 2 -----------------> J3 pin 2 straight through
+        v
+   J3 = 2-pin JST 1.25 SMD vertical header on our board
+        ^
+        |
+   the speaker's own factory plug
+```
 
-- **1.25 mm is not one family.** Genuine JST GH, Molex PicoBlade and the cheap
-  "JST 1.25" sold for LiPo balance leads share the pitch but differ in latch and
-  polarisation, and do not reliably intermate. Consumer gear like this almost always
-  uses the generic **"JST 1.25"**, so buy that one.
-- **Buy both pitches.** A 1.0 mm and a 1.25 mm extension cable together cost a few
-  euros, and fit settles the question in seconds where measurement has already cost
-  two attempts. The spare gets used on something else eventually.
+Four things this buys. **No crimping on the speaker side** — the speaker keeps its factory
+plug and simply moves from `J101` to our `J3`. **The relay contact becomes a PCB trace**
+rather than a hand-splice in a thin cable, which removes the least reliable joint in the
+whole build. **Only one connector needs making**, the `J101` end, and with the kit's
+housings and terminals plus the PA-09 that needs nothing bought. And **reversibility is
+unchanged**: pull our board out, plug the speaker's factory plug straight back into `J101`,
+and the unit is stock again.
+
+**Crimping notes, since the tool is on hand.** The PA-09 is the right choice for this pitch —
+it covers 0.1-0.5 mm² open-barrel terminals, which is precisely the JST SH/GH/PicoBlade
+range. Three things decide whether the joint is trustworthy:
+
+- **Use 28 AWG, not 26.** Generic "JST 1.25" terminals take roughly 28-32 AWG. Genuine JST
+  GH stretches to 26, but on a no-name terminal 26 AWG risks a barrel that will not close
+  properly around the conductor. The BOM's 26-28 AWG silicone wire covers this — pick the
+  thin end.
+- **Strip 1.5-2 mm** so the front wings take the conductor and the rear wings take the
+  insulation. Insulation caught in the conductor wings is the classic intermittent crimp.
+- **Tug-test every terminal** before it goes into the housing. There are ten sets in the kit,
+  so practise on a spare pair first and sacrifice a couple to find the die slot that gives a
+  clean closed barrel. This joint ends up sealed inside a wall, which is the wrong place to
+  discover a weak crimp.
+
+Two consequences to design around. Our board now carries the speaker's mechanical strain,
+so it needs securing rather than just being tucked in. And the speaker pair now crosses the
+PCB, so **route it as a pair, away from `L1` and the `SW` node** — the pair is low impedance
+and driven by an amplifier so it is not especially susceptible, but there is no reason to
+run audio under a 1.1 MHz switching node.
+
+**The one test to do before committing a footprint.** 1.25 mm is not a single family:
+genuine JST GH, Molex PicoBlade and the cheap "JST 1.25" sold for LiPo balance leads share
+the pitch but differ in latch and polarisation, and **do not reliably intermate**. This now
+matters more than it used to, because the speaker's factory plug has to mate with *our*
+header rather than with a bought cable. There are ten sets in the kit, so **take one
+vertical header and try the speaker's plug on it by hand.** If it seats and latches, the
+footprint is settled. If it does not, the intercom uses a different 1.25 mm family and the
+header has to match it instead.
+
+And confirm the pitch itself first, since the ~1.08 mm pin-centre reading was never
+conclusive — that is exactly the error you get with the caliper jaws inside the pin centres.
+**Housing length across both pins** scales with pitch and is far easier to measure:
+**~4.2 mm means 1.0 mm SH, ~5.0 mm means 1.25 mm**, ~5.6 mm means 1.5 mm ZH. If it turns out
+to be 1.0 mm SH, the kit is the wrong pitch and both `J2` and `J3` need re-buying — which is
+the whole reason to measure before the PCB is drawn.
 
 ### Choosing the 74LVC1G07 package
 
@@ -176,13 +329,16 @@ completely dead.
   output and drives the grounded input onto the line (dominant), TX high tri-states
   it (recessive). Do *not* put TX on the input and `/OE` on a GPIO — enabled, it
   would drive the recessive state actively high and fight the bus.
-- **`SK6812` instead of `WS2812`**: better behaved at 3.3 V. Change `chipset:` in the
-  `light:` block of the YAML to match, and check `rgb_order` if the colours come out
-  swapped.
-- **Plain RGB LED + 3 PWM GPIOs** instead of the addressable pixel: more robust and
-  fully in spec, at the cost of two extra GPIOs (there are six spare). Requires
-  swapping the `light:` block in the YAML for an `rgb` light over three `ledc`
-  outputs.
+- **`SK6812` instead of the specified `WS2812B`**: **do not.** Earlier revisions of this
+  document had it the other way round and were wrong — the `SK6812` 5050 is 3.5 V minimum
+  and the `MINI-E` 3.7 V, so neither meets our 3.3 V rail, while the `WS2812B` is specified
+  3.3-5.5 V. See the corrected LED note. Same for `WS2812E`/`WS2812S` at 3.8 V.
+- **Two plain low-Vf LEDs, one per toggle**, instead of one RGB pixel: red and amber are
+  ~2.0 V, so they are fully in spec on 3.3 V with no headroom question at all, and there is
+  no driver IC to fail. Costs one extra GPIO (six are spare) and a second light pipe. This
+  is the fallback if a bench check shows weak blue or green.
+  A *three-colour* RGB LED on PWM does **not** solve the headroom problem — its blue and
+  green dice have the same 2.8-3.4 V Vf as the pixel's.
 - **Optocoupler (PC817) on `GONG1`/`GONG2`**: no longer needed. Ring detection comes
   off the CAN bus. Only worth adding as a fallback if bus receive proves unreliable.
 
@@ -877,44 +1033,93 @@ INTERCOM TERMINAL BLOCK (Line OUT, unused)
                                                       +--> C/D
 
    ---- SPEAKER RELAY (Silent) ----
-   GPIO6 ---[ 1k ]--- base | MMBT2222
+   GPIO6 ---[ 1k ]--- base | BCW65A
+                      base ---[ 10k ]--- GND   (holds base down through boot)
                     emitter -> GND
                   collector -> relay coil pin A
                                relay coil pin B ---[ 150R ]--- +U
-                                                  (~13.5 V, NOT the 3.3 V rail)
+                                                  (~13.5 V, NOT the 3.3 V rail;
+                                                   tap it AFTER F1 and D1)
                                1N4148W across the coil ONLY, cathode to the 150R
                                (put the diode across the coil, not across coil+150R)
 
-   Relay pole 1 contacts, spliced into ONE conductor of the JST extension cable:
-       cut end towards the board   -> COM
-       cut end towards the speaker -> NC
-       NO                          -> not connected
-   The other conductor passes straight through, uncut.
+   Relay pole 1 contacts, in ONE conductor between the two speaker connectors:
+       J2 pin 1 (from intercom J101) -> COM
+       NC                            -> J3 pin 1 (to speaker)
+       NO                            -> not connected
+   J2 pin 2 runs straight to J3 pin 2.
    De-energised = COM-NC closed = speaker connected = rings normally.
 
+   J2 = 1.25 mm housing + crimped terminals (PA-09), wire ends soldered to the board
+   J3 = 1.25 mm SMD vertical header on our board, the speaker's factory plug goes here
+   Route the pair together and away from L1 and SW.
+
    ---- STATUS LED ----
-   3V3 --> WS2812 VDD          (the only rail there is - conveniently correct)
-   GND --> WS2812 VSS
-   GPIO7 ---[ 330R ]--> WS2812 DIN
+   3V3 --> WS2812B VDD        (3.3-5.5 V part, so the single rail is in spec)
+   GND --> WS2812B VSS
+   GPIO7 ---[ 330R ]--> WS2812B DIN
+   Threshold is 0.6 x VDD = 2.0 V, so the 3.3 V GPIO drives it with margin.
+
+   (Fallback if a bench check shows weak blue/green - see the LED note:
+    GPIO7 ---[ 330R ]---|>|--- GND   red   = Silent armed
+    GPIO5 ---[ 330R ]---|>|--- GND   amber = Auto-open armed)
 ```
 
 **The relay coil runs off raw `+U`, not the regulated rail.** The coil current never
 passes through the regulator, so it costs no conversion loss, and it keeps a 10 mA
-switching step off the 3.3 V rail feeding the MCU. The MMBT2222 is rated 40 V, so
-switching 13.5 V on its collector is unremarkable, and the flyback diode keeps it
-below ~14.2 V.
+switching step off the 3.3 V rail feeding the MCU. "Raw" here means *unregulated*, not
+*unprotected*: **tap it downstream of F1 and D1**, so the transistor's collector is
+behind the TVS rather than exposed to the incoming transient.
+
+Steady-state that collector switches 13.5 V, and the flyback diode keeps the turn-off
+spike below ~14.2 V, so the BCW65A's **Vceo of 32 V** is untroubled. The number that
+needs a moment's thought is the surge case: with the transistor off the collector floats
+up through the coil to whatever the rail is doing, and a full-energy SMAJ18A clamp at
+29.2 V would be 91% of Vceo. Thin — except that **Vceo is the base-*open* rating, and
+this base is never open.** With it held down the applicable figure is **Vces = 60 V**,
+which makes 29.2 V a 49% stress.
+
+**Which is exactly what the 10 k base-to-emitter resistor buys.** The GPIO already pulls
+the base low whenever the relay is off, but it goes high-impedance during reset, and the
+10 k covers that window so the collector sits in the Vces regime unconditionally. It
+diverts 75 uA of the 2.6 mA base drive, which is nothing, and it hardens the base against
+injected noise as a side effect. On a 40 V part this would be optional; on a 32 V one it
+is the difference between a comfortable margin and a number you have to argue about.
 
 **Why the 150 R dropper.** From the Omron datasheet the 12 V coil is **1315 ohm /
 9.1 mA / ~100 mW**, and the "150% maximum" figure is an *instantaneous* rating, not a
 continuous one. Straight off 13.5 V the coil would sit at 112% of rated voltage and
 **139% of rated power**, which is more than it is specified for continuously. A single
 150 R in series makes it 12.1 V and 111 mW — essentially nominal — while leaving plenty
-of margin over the **9.6 V must-operate** threshold (80% of rated). It costs one 0805
+of margin over the **9.6 V must-operate** threshold (80% of rated). It costs one 0603
 resistor and 14 mW.
 
 In practice the coil is only energised during a silenced ring, so at most a minute at a
 time, and it would very likely survive without the resistor. Fit it anyway: it turns
 "probably fine" into "in spec".
+
+**Why an NPN and not a MOSFET.** At 9.2 mA the load is trivial for either, and the 2N7002
+that earlier drafts offered as an alternative is in fact the weaker choice: its threshold
+runs as high as 3.0 V against only 3.3 V of gate drive. The decisive argument is boot
+behaviour. **ESP32-C3 GPIOs are high-impedance during reset**, and a bipolar base with
+nothing driving it is *inherently* off, because it needs current rather than voltage to
+conduct. A floating MOSFET gate can drift up on leakage and partially enhance, so a
+pull-down there is load-bearing; on the BJT the same resistor is belt-and-braces, fitted
+for the Vces argument above rather than to stop the relay chattering at power-up.
+
+**Why the BCW65A and not the MMBT2222A** the earlier drafts named. Availability decided
+it, but the substitution is a mild upgrade where it counts. The MMBT2222A's gain is
+specified at Ic = 150 mA, sixteen times our load, so using it here means extrapolating
+down a curve. The BCW65A is characterised at **hFE >= 75 at Ic = 10 mA** — within 8% of
+our 9.2 mA — so saturation is guaranteed by the datasheet rather than by inference. With
+2.6 mA of base drive we need a gain of only 3.5, so we overdrive roughly 20x and
+Vce(sat) lands well under 100 mV. Continuous Ic of 800 mA against 9.2 mA, and 225 mW of
+dissipation against about 1 mW, are both irrelevantly generous.
+
+The one genuine regression is Vceo, 32 V against the MMBT2222A's 40 V, handled above. Note
+also that neither part is AEC-Q101, unlike U1/Q1/the passives — acceptable for a
+low-stress signal transistor that switches a 9 mA coil a few times a week, but it is the
+one place the BOM's automotive-grade rule is not held.
 
 Contacts are rated **1 A switching / 2 A carry**, comfortably above the few hundred mA
 a small speaker draws. Expect a faint click when the contact opens and closes, which is
@@ -934,6 +1139,30 @@ multimeter on diode test and find the orientation directly: the **common pin is 
 one that reads a forward drop with both other pins**, in opposite directions. It goes
 to the signal node, and the end that reads forward *from* it goes to 3V3.
 
+**`BAT54SLT1G` is not a substitute for the BAT54S — it *is* the BAT54S**, in onsemi's
+part numbering, where `LT1` is the SOT-23 tape reel and `G` is Pb-free. Same 30 V / 200 mA
+dual series die every other vendor sells. **One thing is worth a second look on the
+distributor page: onsemi also lists `SBAT54SLT1G`**, and that *leading* `S` — not the `S`
+in `BAT54S`, which just means "series" — marks the **AEC-Q101 qualified, PPAP-capable**
+variant, the same convention as the `Q` in the `AP63203QWU`. Identical die, cents apart.
+If both are in stock, take the automotive one and the BOM keeps its rule.
+
+**Why a Schottky, and why the number that matters is Vf at 1 mA.** The clamp level *is*
+the rail plus Vf, and the ESP32-C3's absolute maximum on a GPIO is only VDD + 0.3 V. A
+plain silicon diode at 0.7 V would clamp to 4.0 V and sail straight past that, so the
+clamp itself would be the thing that killed the pin. This part is **0.32 V max at 1 mA**
+and **0.24 V max at 0.1 mA**, which lands at 3.62 V — inside the rating for all practical
+purposes, and the 1 k series resistor is what keeps us down at those low currents rather
+than out at the 0.40 V / 10 mA figure.
+
+**Nothing else about it perturbs the bus.** Leakage is 2 uA worst case, and that is
+specified at 25 V reverse where we only ever apply 3.3 V, so through the 1 k it is
+worth millivolts. Capacitance is 10 pF max per diode, so roughly 20 pF from the node to
+AC ground, giving a 20 ns time constant against an **88 us bit time** — five thousand
+times too small to matter. And the plausible fault, `C/D` shorted to `+U`, drives about
+9.8 mA through the 1 k into the 3.3 V rail: 5% of the diode's DC rating, and a current
+the ESP32's own consumption swallows without the rail lifting.
+
 ## Three details that will bite if skipped
 
 ### 1. The 10 k pull-up on CAN TX is not optional
@@ -944,15 +1173,58 @@ output low, which pulls the bus dominant and **jams the intercom** — no calls,
 door. The pull-up makes "recessive" the default at every instant the firmware is not
 in control.
 
-### 2. Do not add a 5 V rail for the status LED
+### 2. The status pixel must be a WS2812B, not an SK6812
 
-The single-rail design makes this correct by accident, so do not "fix" it later. A
-WS2812B run from 5 V wants a data high of about 0.7 x VDD = 3.5 V, which a 3.3 V GPIO
-does not reliably reach — the classic cause of intermittent flicker and wrong colours.
-Running the pixel from 3V3 puts the threshold at 2.3 V and the problem disappears. It
-is marginally below the datasheet's minimum supply and slightly dimmer, which is
-irrelevant for a status dot at 35% brightness behind a fibre. SK6812 parts are
-explicitly rated for 3.3 V if you want to be strict about it.
+**Earlier revisions of this document said the `SK6812` was "explicitly rated for 3.3 V"
+and that this was the reason to prefer it over a `WS2812B`. Both halves were wrong, and
+the truth is the exact reverse.** From the manufacturers' own current figures:
+
+| Part | Supply (VDD) | Internal cap | Reverse prot. | Overvolt. prot. |
+|---|---|---|---|---|
+| **`WS2812B`** | **3.3 - 5.5 V** | **inside** | **yes** | **yes** |
+| `WS2812C` | 3.3 - 5.5 V | no | no | no |
+| `WS2812E`, `WS2812S` | **3.8** - 5.5 V | inside | yes | yes |
+| `SK6812` (5050) | **3.5** - 5.5 V | - | - | - |
+| `SK6812MINI-E` (3228) | **3.7** - 5.5 V | - | - | - |
+| Inolux `IN-PI554FCH` | **3.7** - 5.5 V | - | - | - |
+
+So **the `WS2812B` is in spec on our rail and the `SK6812` never was.** World Semi lists
+3.3 - 5.5 V across `WS2812A/B/C/D`, in every package including the 3535 `MINI` and the
+5050.
+
+**And the headroom worry is exactly what the `V6` revision addresses.** The concern was
+real: blue and green dice are InGaN with Vf of 2.8 - 3.4 V, leaving nearly nothing above
+them for the driver's current sink at 3.3 V. World Semi's `V6` PCN (30 Sep 2025) claims
+precisely that fix — *"Constant-Current Drive at 3.3 V: RGB channel voltage drop
+optimization, 3.3 V power supply can achieve the same light emission consistency as 5 V"*
+— along with zero power-on flicker, 6 dB less radiated emission, and standby current under
+1 uA. `WS2812C-V6` (25 May 2026) carries the same improvement.
+
+**Take the `B`, not the `C`.** They share the 3.3 V rating, and the `C` draws less
+(5 mA x 3 against 12 mA x 3), which for an indicator would be welcome. But the `B` has an
+**internal capacitor plus reverse-connection and over-voltage protection** and the `C` has
+none of the three. On a permanent install inside someone's wall, reverse-connection
+protection alone justifies the choice. Avoid `WS2812E` and `WS2812S` outright: 3.8 V
+minimum.
+
+**Data levels are a non-issue and the old level-shifter advice is obsolete.** At 3.3 V the
+`V6` threshold of 0.6 x VDD is 2.0 V against a 3.3 V drive. Even *at* 5 V, the `V5`
+datasheet already specifies VIH as a flat **2.7 V** rather than 0.7 x VDD, so a 3.3 V GPIO
+drives a 5 V-powered part directly from `V4` onwards. The widely repeated "you need a
+74AHCT125" applies to pre-2019 stock.
+
+**The one real risk is revision, not part number.** `V5` datasheet PDFs still print
+3.7 - 5.3 V as the absolute maximum rating, and no AliExpress seller states which revision
+is in the bag. The PCN says the inventory switch began immediately and that old and new
+batches interoperate, so current stock should be `V6` — but verify rather than assume:
+**power one from 3V3 on the bench and check that blue and green are respectable before
+committing it to the PCB.** They cost pennies, so buy a handful.
+
+If that test disappoints, the fallback stands: **two discrete low-Vf LEDs, one per
+toggle**, red plus amber or GaP yellow-green at ~2.0 - 2.2 V, each with a series resistor.
+Fully in spec on 3.3 V with no driver IC at all. Note that a *plain* RGB LED on three PWM
+GPIOs is **not** a fallback — same InGaN dice, same dead blue channel, and no clever
+current sink to rescue it.
 
 ### 3. Check what you are doing to the bus supply
 

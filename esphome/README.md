@@ -74,8 +74,8 @@ firmware itself depends on.
 |---|---|---|
 | CAN RX | 20 | from `C/D` through a series resistor |
 | CAN TX | 21 | into the open-drain buffer |
-| Speaker relay | 6 | via a transistor, relay coil on 5 V |
-| WS2812 status LED | 7 | 330 ohm in series on data |
+| Speaker relay | 6 | via a BCW65A NPN; **12 V coil on `+U` through 150 R**, not on a 5 V rail |
+| `WS2812B` status LED | 7 | 330 ohm in series on data. **Must be a `WS2812B`** (3.3-5.5 V), not an `SK6812` (3.5/3.7 V) - see `docs/wiring.md` |
 
 GPIO11-17 are the SPI flash and GPIO18/19 are the native USB, so they are
 unavailable. GPIO2/8/9 are strapping pins and are best left alone.
@@ -134,6 +134,19 @@ analog call audio turned out to be wrong. Fit the BAT54S anyway: it is a few cen
 and one SOT-23, and the AC measurement (0.9 V peak, most likely the CAN bursts and
 the step edges) is not clean enough to bet an ESP32 on.
 
+The part is **onsemi `BAT54SLT1G`**, or `SBAT54SLT1G` if stocked — the leading `S` is
+onsemi's AEC-Q101 variant of the same die. It must be a Schottky: at 0.32 V max forward
+drop the clamp sits at 3.62 V, where a silicon diode's 0.7 V would exceed the ESP32-C3's
+VDD + 0.3 V absolute maximum and become the hazard rather than the protection.
+
+### Status LED
+
+**`WS2812B`, not `SK6812`.** World Semi specifies the `WS2812B` at **3.3-5.5 V** in all
+packages, so it runs in spec directly off our only rail, and the `V6` revision explicitly
+optimises constant-current drive at 3.3 V. Every `SK6812` needs 3.5 V or more. The
+`chipset: WS2812` already in `electra-intercom.yaml` is therefore correct as written —
+check `rgb_order` if colours come out swapped.
+
 ### Power
 
 **Pololu D24V10F3**, a fixed **3.3 V** 1 A buck, from the unit's `+U` (~13.5 V)
@@ -160,19 +173,25 @@ speaker is connected, so an unpowered or crashed board leaves the intercom behav
 exactly as stock. Drive the coil from **raw `+U`**, not the 3.3 V rail: it costs no
 conversion loss and keeps the switching step off the MCU's supply. The 12 V coil is
 1315 ohm / 9.1 mA, so add **150 R in series** to bring it to nominal on our 13.5 V
-rail. Switch the low side with an NPN or logic-level FET (MMBT2222 with ~1 k on the
-base, or a 2N7002) and a 1N4148W flyback diode across the coil.
+rail, tapped downstream of the fuse and the TVS. Switch the low side with an **onsemi
+BCW65ALT1G** NPN — ~1 k from the GPIO to the base, plus 10 k base to emitter so the base
+stays down while the ESP32's GPIOs are high-impedance during reset — and a 1N4148W
+flyback diode across the coil. See `docs/wiring.md` for why an NPN rather than a FET, and
+why that 10 k matters given the part's 32 V Vceo.
 
 **Nothing needs cutting, and the concept is already proven.** With `J101` unplugged
 the terminal makes no sound at all during a call, so opening one leg of the speaker
 pair is all Silent needs to do.
 
 The speaker is on a small 2-pin plug at **`J101`**, measured ~1.08 mm at the pin
-centres and judged low, so most likely **1.25 mm** ("JST 1.25"). Do not crimp at that
-pitch: buy a ready-made 2-pin male-to-female extension cable, cut it in the middle,
-and put the relay's COM->NC contact in one conductor. That plugs in between the board
-and the speaker — no crimping, no modification to the intercom, reversible by
-unplugging. See [../docs/wiring.md](../docs/wiring.md) for how to confirm the pitch.
+centres and judged low, so most likely **1.25 mm** ("JST 1.25"). **The speaker plugs
+into our board**: a 1.25 mm SMD vertical header (`J3`) takes the speaker's own factory
+plug, and a short crimped lead (`J2`) runs from our board back to `J101`. The relay's
+COM->NC contact then sits in one conductor as a **PCB trace** rather than a splice in a
+thin cable. Nothing is crimped on the speaker side, nothing on the intercom is modified,
+and it is reversible by plugging the speaker straight back into `J101`. See
+[../docs/wiring.md](../docs/wiring.md) for how to confirm the pitch and for the one
+fit test to do before committing the footprint.
 
 The unit has a **single dynamic loudspeaker** in the rear cover and no separate
 piezo buzzer, so the ring melody and the call audio share it. That is what makes

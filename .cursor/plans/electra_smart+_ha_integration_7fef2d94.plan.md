@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: bom
     content: "Acquire BOM per docs/wiring.md - all SMD except the two modules: ESP32-C3 (SuperMini HW-466AB), Pololu D24V10F3 fixed-3.3V buck, SN74LVC1G07DBVR open-drain buffer in SOT-23-5 (or 74LVC1G125 wired A=GND, /OE=TX), Omron G6K-2F-Y DC12 relay, WS2812B/SK6812 pixel, 2-pin extension cables, 0805 passives (10k + 1k + 1k + 47R + 150R + 330R + 100nF + 10uF + SMD electrolytic), BAT54S, MMBT2222, 1N4148W, wiring"
-    status: in_progress
+    status: completed
   - id: twai-bitrate
     content: "DONE: custom electra_can component - exact 11363.64 bps (brp=320, 22 TQ) plus runtime listen-only/normal switching. Config validates; compile pending"
     status: completed
