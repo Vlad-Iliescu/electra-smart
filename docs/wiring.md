@@ -334,16 +334,17 @@ nothing resisting that load. The seller distinguishes the two as *with points* a
 **The part is a CTS Series 225B in all but the label.** The AliExpress listing gives no
 manufacturer and its own drawing is a low-resolution JPEG, but the form factor — 7.8 x 3.5
 mm, gullwing, side actuating, offered with and without boss — is CTS's `225BM...RB1(S)`
-family, which has a real datasheet with a toleranced PCB layout. The footprint is built
-from that, read out of the PDF as vector geometry rather than measured off a scan. The
-listing's own drawing agrees to within 0.05 mm in X, which is the cross-check that the
-two really are the same part.
+family, which has a real datasheet with a toleranced PCB layout. The footprint is built to
+the listing's own dimensions, since that is the part actually being soldered down, and
+checked against the CTS layout read out of the PDF as vector geometry rather than measured
+off a scan. The two agree to within 0.05 mm, which is the cross-check that they really are
+the same part.
 
 That has a pleasant consequence: **a genuine CTS part is a drop-in replacement.** The boss
-holes are drilled to CTS's 1.0 mm rather than the clone's 0.9 mm, which accepts both the
-0.8 mm CTS boss and the 0.7 mm clone boss. If the cheap switch ever wears out, a
-distributor part with a ten-year availability guarantee solders straight onto the same
-land.
+holes are drilled to the listing's Ø0.9 mm, which takes the clone's 0.7 mm boss and CTS's
+0.8 mm equally, and the switch leads share the same 4.20 mm centres. If the cheap switch
+ever wears out, a distributor part with a ten-year availability guarantee solders straight
+onto the same land.
 
 **Do not trust the terminal numbers.** CTS numbers the switch contacts 1/2 and the linked
 frame 3/4; the clone numbers them the other way round. What is identical on both is the
@@ -360,9 +361,9 @@ when pressed, and `C9` swallows contact bounce plus whatever static comes in thr
 opening the plunger pokes out of. See the pin map for why GPIO10 and not GPIO9.
 
 Two things are still open. The footprint has **no 3D model** yet, so it will show as an
-empty outline in the 3D viewer. And although the land pattern comes from a real datasheet,
-the part being soldered to it does not — so **put a caliper on one of the delivered
-switches before the board is fabbed**, checking the 7.8 mm lead span, the 2.3 mm boss pitch
+empty outline in the 3D viewer. And while the land pattern is taken straight off the part's
+own dimensioned drawing, that drawing carries no manufacturer name and no tolerances — so
+**put a caliper on one of the delivered switches before the board is fabbed**, checking the 7.8 mm lead span, the 2.3 mm boss pitch
 and the boss diameter. While it is in hand, confirm the one thing a caliper cannot: that
 **the plunger comes out on the same side as the two large frame pads**, which is what the
 footprint assumes and what decides which board edge the part goes on. Both checks take two
@@ -619,27 +620,41 @@ the module SMD, without headers. The lesson generalises: pick the seating plane 
 the dominant planar face, not by taking the model's extreme.
 
 **`SW1` is done: `electra:SW_Push_Side_CTS_225B_7.8x3.5mm_Boss`.** Pads 1/2, the switch
-contacts, are **1.00 x 1.25 mm on 4.30 mm centres**; the two `SH` frame pads are
-**1.50 x 1.20 mm on 6.80 mm centres**, giving the datasheet's 8.30 mm overall span; the two
-boss holes are **Ø1.0 mm NPTH on a 2.30 mm pitch**. The origin sits midway between those
-holes, because the bosses are the mechanical datum — the part body centre is 0.15 mm off it.
-The switch note above covers why this part and why the bossed variant.
+contacts, are **0.90 x 1.30 mm on 4.20 mm centres** with a 3.30 mm inner gap; the two `SH`
+frame pads are **1.45 x 0.90 mm on 6.75 mm centres**, a 5.30 mm inner gap and an 8.20 mm
+outer span; the boss holes are **Ø0.9 mm NPTH on a 2.30 mm pitch**. The origin is the
+**part centre**, so the 6.9 x 3.0 mm body sits symmetrically about it and the boss holes fall
+**0.15 mm below** it. The switch note above covers why this part and why the bossed variant.
 
-This is the first footprint here taken from a datasheet by **reading the PDF's vector
-geometry** rather than measuring a raster drawing, which is worth doing whenever the source
-allows: the hole pitch came out at 32.59 pt for a stated 2.30 mm, giving a 14.17 pt/mm scale
-against which every other callout reconciled to three decimal places. That is also how the
-listing's own ambiguous drawing got resolved — its `4.2` turns out to be a **centre-to-centre**
-dimension, not the outer span it looks like, which is why `3.3 + 0.9 + 0.9` never added up
-to its stated `5.3`.
+That 0.15 mm offset is the whole key to reading the drawing: the holes are *not* on the
+part's horizontal centreline, and until that is spotted none of the vertical callouts can be
+made to agree. Once it is, they all close — switch pads 0.25 mm above centre, frame pads
+0.50 mm below.
 
-Two dimensions sit **0.05 mm off the CTS figures on purpose**, and are recorded in the
-footprint's own description so nobody later "corrects" them. Pads 1/2 are on 4.30 mm centres
-rather than CTS's 4.20, which lines their inner edges up with the clone's 3.30 mm gap and
-lifts the copper-to-hole-wall clearance to **0.207 mm** — just past the 0.2 mm most fabs
-want, where the CTS geometry alone gives 0.173 mm. The `SH` pads reach 0.05 mm further
-inboard than CTS's 5.40 mm inner span so they cover the clone's 5.30 as well. The rule
-throughout was to **grow pads away from the holes, never toward them**.
+**The pattern is built to the drawing for the part being bought, and corroborated against the
+CTS Series 225B datasheet rather than derived from it.** The CTS figures were read out of the
+PDF as **vector geometry** instead of measured off a raster scan: the hole pitch came out at
+32.59 pt for a stated 2.30 mm, a 14.17 pt/mm scale against which every other callout
+reconciled to three decimal places. The two sources agree to within **0.05 mm everywhere**,
+which is what establishes that the unbranded part really is this form factor — and it means a
+**genuine CTS part still drops in**, its 0.8 mm bosses entering these 0.9 mm holes and its
+switch leads landing on the same 4.20 mm centres. Only its frame leads run wider, 8.30 mm
+against 8.20, overhanging the pad end by 0.05 mm, which is nothing on a hand-soldered
+gull-wing. Reading the vectors also settled the listing drawing's one real ambiguity: its
+`4.2` is **centre-to-centre**, not the outer span it looks like, which is why
+`3.3 + 0.9 + 0.9` never added up to its stated `5.3`.
+
+**Copper-to-hole-wall clearance is 0.190 mm** at pad 1, and it is worth recording that this
+is normal rather than marginal, because it looks alarming next to a 0.2 mm rule of thumb. A
+bossed side-push is inherently cramped — the bosses have to sit between the two pad rows —
+and KiCad's own stock library ships the class tighter: **0.075 mm** on the Alps `SKRTLAE010`
+and **0.175 mm** on the CK `KMS2xxGP`. Silkscreen is held 0.24 mm off the copper.
+
+The boss holes have **size equal to drill**, so they carry no annular ring and their copper
+layer set cannot affect what gets fabricated. It is spelled `*.Cu` rather than `F&B.Cu`
+because that is what **all 25** `np_thru_hole` pads in KiCad's `Button_Switch_SMD` library
+use, so it is written down here to stop someone "correcting" an inert field back to the
+non-standard spelling.
 
 > **`SW1` has to go at a board edge, and the direction is not arbitrary.** The plunger fires
 > in **+Y**, drawn on the fab layer as an arrow with the actuator body it pushes through.

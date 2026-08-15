@@ -3,7 +3,7 @@
 	(generator "pcbnew")
 	(generator_version "10.0")
 	(layer "F.Cu")
-	(descr "Side-actuated SMD tactile switch, 7.8 x 3.5 mm gull-wing with two locating bosses. Land pattern is the PCB LAYOUT from the CTS Series 225B datasheet (225BM...RB1(S)/RB2(S), 'Surface Mount, With Boss'), read out of the PDF as vector geometry rather than measured off a raster scan: pads 1/2 are 1.00 x 1.25 mm on 4.30 mm centres, the two SH pads are 1.50 x 1.20 mm on 6.80 mm centres, bosses on a 2.30 mm pitch. Origin sits midway between the two boss holes, which is the mechanical datum the bosses define; the part body centre is 0.15 mm off it, toward the pad 1/2 side. Pads 1 and 2 are the momentary switch. The datasheet's terminals 3 and 4 are permanently linked inside the part and it draws them tied to earth, so they are carried here as two pads both numbered SH, which pairs with the stock Switch:SW_Push_Shielded symbol and puts them on GND. They are the frame, and on a side-push they are what takes the actuation load. Boss holes are drilled 1.0 mm (the CTS figure, +0.1/-0) so that the same land accepts both a genuine CTS 225B, whose bosses are 0.8 mm, and the common unbranded 3.5 x 7.8 x 3.8 mm clone sold as a '3x6x3.8 with points' assortment part, whose bosses are 0.7 mm and whose own drawing calls for 0.9 mm holes. The clone's land pattern agrees with CTS to within 0.05 mm in X, and where the two differ in pad height this pattern takes the larger envelope, always growing pads away from the holes rather than toward them. Two dimensions are therefore deliberately 0.05 mm off the CTS figures and are not transcription slips: pads 1/2 sit on 4.30 mm centres rather than CTS's 4.20, which lines their inner edges up with the clone's 3.30 mm gap and buys the copper-to-hole-wall clearance back up to 0.207 mm, and the SH pads reach 0.05 mm further inboard than CTS's 5.40 mm inner span so they also cover the clone's 5.30. The outer span of 8.30 mm and the boss pitch match CTS exactly. The clone numbers its terminals the other way round, calling the linked frame 1/2 and the switch 3/4, which is a further reason the frame pads are labelled SH here rather than by number: on both parts the small inboard pads are the switch and the large outboard pads are the frame, so either part drops onto this footprint unchanged and there is no numbering left to get backwards. The actuator pushes toward +Y, drawn on F.Fab with an arrow: place this at a board edge with that edge facing the housing wall. Actuator length varies by part number (CTS orders it as 'L'), so the courtyard is drawn generously on the push side. No 3D model yet.")
+	(descr "Side-actuated SMD tactile switch, 7.8 x 3.5 mm gull-wing with two locating bosses. Land pattern is built to the dimensioned drawing for the part actually being fitted: the unbranded 3.5 x 7.8 x 3.8 mm switch sold in AliExpress assortment kits as a 'with points' variant. Pads 1/2 are 0.90 x 1.30 mm on 4.20 mm centres, a 3.30 mm inner gap; the two SH pads are 1.45 x 0.90 mm on 6.75 mm centres, a 5.30 mm inner gap and an 8.20 mm outer span; the bosses are 0.9 mm NPTH on a 2.30 mm pitch. Origin is the part centre, so the 6.9 x 3.0 mm body sits symmetrically about it and the boss holes fall 0.15 mm below it. That offset is real rather than a rounding artefact, and it is what makes the drawing's vertical callouts reconcile: measured from the centre, the switch pads start 0.25 mm above and the frame pads 0.50 mm below. Pads 1 and 2 are the momentary switch. The other two terminals are permanently linked inside the part and every drawing of it shows that pair tied to earth, so they are carried here as two pads both numbered SH, which pairs with the stock Switch:SW_Push_Shielded symbol and puts them on GND. They are the frame, and on a side-push they are what takes the actuation load. The whole pattern is corroborated against the CTS Series 225B datasheet (225BM...RB1(S)/RB2(S), 'Surface Mount, With Boss'), read out of the PDF as vector geometry rather than measured off a raster scan. Two independent sources agreeing to within 0.05 mm is the cross-check that the unbranded part really is this form factor, and it means a genuine CTS 225B is a drop-in replacement: its 0.8 mm bosses enter these 0.9 mm holes, its switch leads sit on the same 4.20 mm centres, and only its frame leads run marginally wider - 8.30 mm outer span against 8.20 - so their toes overhang the pad end by 0.05 mm, which is immaterial on a hand-soldered gull-wing. Copper-to-hole-wall clearance is 0.190 mm at pad 1, the tightest point, and that tightness is inherent to a bossed side-push because the bosses have to live between the two pad rows. It is not unusually tight for the class: KiCad's own stock library ships SW_Push_1P1T-MP_NO_Horizontal_Alps_SKRTLAE010 at 0.075 mm and SW_SPST_CK_KMS2xxGP at 0.175 mm. The clone numbers its terminals the other way round, calling the linked frame 1/2 and the switch 3/4, which is a further reason the frame pads are labelled SH here rather than by number: on both parts the small inboard pads are the switch and the large outboard pads are the frame, so either part drops onto this footprint unchanged and there is no numbering left to get backwards. The boss holes have size equal to drill, so they carry no annular ring and the copper layer set on them cannot affect the output; it is spelled *.Cu because that is what every np_thru_hole pad in KiCad's own Button_Switch_SMD library uses, so do not 'fix' it to F&B.Cu. The actuator pushes toward +Y, drawn on F.Fab with an arrow: place this at a board edge with that edge facing the housing wall. Actuator length varies by part number (CTS orders it as 'L'), so the courtyard is drawn generously on the push side. No 3D model yet.")
 	(tags "switch tactile side push smd boss cts 225b 7.8x3.5")
 	(property "Reference" "REF**"
 		(at 0 -2.6 0)
@@ -52,8 +52,8 @@
 	(attr smd)
 	(duplicate_pad_numbers_are_jumpers no)
 	(fp_line
-		(start -2.45 1.35)
-		(end -0.95 1.35)
+		(start -2.35 1.5)
+		(end -0.95 1.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -62,8 +62,8 @@
 		(uuid "b6e7f809-12a3-44b5-8fc6-e708192a3b4c")
 	)
 	(fp_line
-		(start -1.45 -1.65)
-		(end 1.45 -1.65)
+		(start -1.35 -1.5)
+		(end 1.35 -1.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -72,8 +72,8 @@
 		(uuid "a5d6e7f8-0192-43a4-8eb5-d6f708192a3b")
 	)
 	(fp_line
-		(start 0.95 1.35)
-		(end 2.45 1.35)
+		(start 0.95 1.5)
+		(end 2.35 1.5)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -82,8 +82,8 @@
 		(uuid "c7f80912-a3b4-45c6-90d7-08192a3b4c5d")
 	)
 	(fp_circle
-		(center -2.15 -2.05)
-		(end -2.05 -2.05)
+		(center -2.1 -1.95)
+		(end -2 -1.95)
 		(stroke
 			(width 0.12)
 			(type solid)
@@ -93,8 +93,8 @@
 		(uuid "d8091223-b4c5-46d7-91e8-192a3b4c5d6e")
 	)
 	(fp_line
-		(start -4.4 -2)
-		(end 4.4 -2)
+		(start -4.4 -1.85)
+		(end 4.4 -1.85)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -103,8 +103,8 @@
 		(uuid "e9122334-c5d6-47e8-92f9-2a3b4c5d6e7f")
 	)
 	(fp_line
-		(start -4.4 2.1)
-		(end -4.4 -2)
+		(start -4.4 2.25)
+		(end -4.4 -1.85)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -113,8 +113,8 @@
 		(uuid "1c455667-f809-4a12-952c-5d6e7f809102")
 	)
 	(fp_line
-		(start 4.4 -2)
-		(end 4.4 2.1)
+		(start 4.4 -1.85)
+		(end 4.4 2.25)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -123,8 +123,8 @@
 		(uuid "fa233445-d6e7-48f9-930a-3b4c5d6e7f80")
 	)
 	(fp_line
-		(start 4.4 2.1)
-		(end -4.4 2.1)
+		(start 4.4 2.25)
+		(end -4.4 2.25)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -133,8 +133,8 @@
 		(uuid "0b344556-e7f8-4901-941b-4c5d6e7f8091")
 	)
 	(fp_line
-		(start -3.45 -1.15)
-		(end -2.95 -1.65)
+		(start -3.45 -1)
+		(end -2.95 -1.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -143,8 +143,8 @@
 		(uuid "2d566778-091a-4b23-963d-6e7f80910213")
 	)
 	(fp_line
-		(start -3.45 1.35)
-		(end -3.45 -1.15)
+		(start -3.45 1.5)
+		(end -3.45 -1)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -153,8 +153,8 @@
 		(uuid "619aabbc-4d5e-4f67-9a71-102132435467")
 	)
 	(fp_line
-		(start -2.95 -1.65)
-		(end 3.45 -1.65)
+		(start -2.95 -1.5)
+		(end 3.45 -1.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -163,8 +163,8 @@
 		(uuid "3e677889-1a2b-4c34-974e-7f8091021324")
 	)
 	(fp_line
-		(start -0.75 1.35)
-		(end -0.75 1.85)
+		(start -0.75 1.5)
+		(end -0.75 2)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -173,8 +173,8 @@
 		(uuid "72aabbcd-5e6f-4078-9b82-213243546778")
 	)
 	(fp_line
-		(start -0.75 1.85)
-		(end 0.75 1.85)
+		(start -0.75 2)
+		(end 0.75 2)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -183,8 +183,8 @@
 		(uuid "83bbcdde-6f70-4189-9c93-324354677889")
 	)
 	(fp_line
-		(start -0.25 0.9)
-		(end 0 1.15)
+		(start -0.25 1.05)
+		(end 0 1.3)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -193,8 +193,8 @@
 		(uuid "b6eeff01-92a3-44bc-9fc6-6778899aabbc")
 	)
 	(fp_line
-		(start 0 0.35)
-		(end 0 1.15)
+		(start 0 0.5)
+		(end 0 1.3)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -203,8 +203,8 @@
 		(uuid "a5ddeef0-8192-43ab-9eb5-546778899aab")
 	)
 	(fp_line
-		(start 0.25 0.9)
-		(end 0 1.15)
+		(start 0.25 1.05)
+		(end 0 1.3)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -213,8 +213,8 @@
 		(uuid "c7ff0112-a3b4-45cd-90d7-78899aabbccd")
 	)
 	(fp_line
-		(start 0.75 1.85)
-		(end 0.75 1.35)
+		(start 0.75 2)
+		(end 0.75 1.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -223,8 +223,8 @@
 		(uuid "94ccddef-7081-429a-9da4-43546778899a")
 	)
 	(fp_line
-		(start 3.45 -1.65)
-		(end 3.45 1.35)
+		(start 3.45 -1.5)
+		(end 3.45 1.5)
 		(stroke
 			(width 0.1)
 			(type solid)
@@ -233,8 +233,8 @@
 		(uuid "4f78899a-2b3c-4d45-985f-809102132435")
 	)
 	(fp_line
-		(start 3.45 1.35)
-		(end -3.45 1.35)
+		(start 3.45 1.5)
+		(end -3.45 1.5)
 		(stroke
 			(width 0.1)
 			(type solid)
