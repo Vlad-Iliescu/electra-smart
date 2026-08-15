@@ -66,17 +66,20 @@ section for which choices actually matter and which are theatre.
 | **D2** | 1 | **1N4148W** | **SOD-123**, or SOD-123F if that is what stock offers | `K1` coil flyback. `W` = SOD-123, `WS` = smaller SOD-323. **Check which you actually received** - see the footprint note |
 | **D3** | 1 | **onsemi BAT54SLT1G** | SOT-23, *series* pair | Clamps the CAN RX pin to the rails. 30 V, 200 mA, Vf **0.32 V max at 1 mA**, Ct 10 pF. **If `SBAT54SLT1G` is also in stock take that instead** - leading `S` = AEC-Q101 + PPAP, same die, see note |
 | **LED1** | 1 | **`WS2812B`**, ideally `V6` | SMD single pixel, **3535 `MINI`** or 5050 | Status LED. **3.3-5.5 V, so in spec on our rail** - and `V6` specifically optimises constant-current drive at 3.3 V. **Not an `SK6812`** (3.5 V / 3.7 V) and **not `WS2812E`/`S`** (3.8 V). Take the `B` over the `C` for its internal cap and reverse-connection protection. **Not a distributor part**: AliExpress or similar, buy a handful and bench-check one - see the LED note |
+| **SW1** | 1 | **Side-actuated SMD tact switch, 7.8 x 3.5 x 3.8 mm, _with bosses_** | 4-pad gullwing + 2 locating bosses | Mode button. Functionally a **CTS `225BM...RB1(S)`**, whose datasheet supplied the land pattern. From the AliExpress assortment take **variant No.5** and make sure it is a *with points* version - the bosses are what carry the side press. **Not a distributor part**: buy the 50-piece lot, and see the switch note for why the bossed variant is not optional here |
 | **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here**, so no crimping on that side. From the 10-set AliExpress kit - **fit-test one against the speaker plug before drawing the footprint** |
 | **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note |
 | **F1** | 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
 | **R4** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
-| **R8** | 1 | 10 k resistor, same part as R4 | 0603 | Base-to-emitter on `Q2` - see the Vces note. **So this part is 2 per board** |
+| **R8** | 1 | 10 k resistor, same part as R4 | 0603 | Base-to-emitter on `Q2` - see the Vces note |
+| **R11** | 1 | 10 k resistor, same part as R4 | 0603 | Pull-up on `SW1`, so the button reads active low. **With R4 and R8 that makes this part 3 per board** |
 | **R6** | 1 | 1 k resistor `CRCW06031K00JNEA` | 0603 | CAN RX series limit |
 | **R7** | 1 | 1 k resistor, same part as R6 | 0603 | `Q2` base. **So this part is 2 per board** |
 | **R5** | 1 | 47 R resistor `CRCW060347R0JNEA` | 0603 | CAN TX series limit |
 | **R9** | 1 | 150 R resistor `CRCW0603150RJNEA` | 0603 | `K1` coil dropper: 13.5 V across 1315 + 150 ohm draws 9.2 mA, so the 12 V coil sees **12.12 V** |
 | **R10** | 1 | 330 R resistor `CRCW0603330RJNEA` | 0603 | `LED1` data line. Buy 2 if you want the two-plain-LED fallback available - at **(3.3 - 2.0) / 330 = 3.9 mA** it doubles as their series resistor |
-| **C7** | 1 | 100 nF ceramic | 0603, 50 V | Decoupling at `U2`. **Same part as C2 and C5** (`CGA3E3X8R1H104K080AB`), so that part is **3 per board** in total |
+| **C7** | 1 | 100 nF ceramic | 0603, 50 V | Decoupling at `U2`. **Same part as C2, C5 and C9** (`CGA3E3X8R1H104K080AB`), so that part is **4 per board** in total |
+| **C9** | 1 | 100 nF ceramic, same part as C7 | 0603, 50 V | Debounce and ESD shunt across `SW1`, which is the one node deliberately exposed to a finger through the housing |
 | **C6** | 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
 | **C8** | 1 | 10 uF ceramic | 1206 | On 3V3 next to `U3`, for WiFi bursts. **Same part as C1** (`CGA5L3X5R1H106M160AB`), so that part is **2 per board**. Its 50 V rating means almost no DC-bias derating at 3.3 V, so you get a true 10 uF |
 | **J1** | - | 3-way tap to the intercom | wire at bench, header on the PCB | `+U`, `C/D`, `GND`. No part to buy yet, but the designator is fixed so the pinout has a name |
@@ -100,6 +103,7 @@ SOT-23s. Fill it in for every line. The full allocation:
 | CAN interface | `U2` buffer, `R4` TX pull-up, `R5` TX series, `R6` RX series, `D3` RX clamp |
 | Relay / Silent | `K1` relay, `Q2` NPN, `R7` base, `R8` base-emitter, `R9` coil dropper, `D2` flyback |
 | Indicator | `LED1`, `R10` data series |
+| Mode button | `SW1` side-push switch, `R11` pull-up, `C9` debounce |
 | MCU | `U3`, `C7` buffer decoupling, `C8` 3V3 bulk |
 | Connectors | `J1` intercom tap, `J2` speaker in, `J3` speaker out |
 
@@ -133,15 +137,21 @@ match this table.** The translation is:
 Everything else — `U1`-`U3`, `L1`, `D1`-`D3`, `Q1`, `Q2`, `F1`, `K1`, `J1`-`J3`, `LED1` —
 kept its designator.
 
+**The mode button was added after that renumber**, so `SW1`, `R11` and `C9` appear in no
+older revision and in none of the Digi-Key orders placed on 12 Aug. `R11` and `C9` are
+extra pieces of two part numbers already on the list, so they change the quantities in
+the table below rather than adding lines to it; only `SW1` is a genuinely new purchase,
+and it does not come from Digi-Key.
+
 **Three lines need a compound reference, and it is easy to get wrong** because one part
 number serves more than one position:
 
 | Part number | Reference to enter | Per board |
 |---|---|---|
-| `CGA3E3X8R1H104K080AB` (100 nF) | `C2,C5,C7` | **3** |
+| `CGA3E3X8R1H104K080AB` (100 nF) | `C2,C5,C7,C9` | **4** |
 | `CGA5L3X5R1H106M160AB` (10 uF) | `C1,C8` | **2** |
 | `CGA6P1X7R1C226M250AC` (22 uF) | `C3,C4` | **2** |
-| `CRCW060310K0JNEA` (10 k) | `R4,R8` | **2** |
+| `CRCW060310K0JNEA` (10 k) | `R4,R8,R11` | **3** |
 | `CRCW06031K00JNEA` (1 k) | `R6,R7` | **2** |
 | `CRCW0603100KJNEA` (100 k) | `R2,R3` | **2** |
 
@@ -307,6 +317,57 @@ conclusive — that is exactly the error you get with the caliper jaws inside th
 to be 1.0 mm SH, the kit is the wrong pitch and both `J2` and `J3` need re-buying — which is
 the whole reason to measure before the PCB is drawn.
 
+### The mode button
+
+`SW1` cycles the unit through its states from the outside, so it has to be reachable
+without opening the intercom. That means it sits **at a board edge, pressed sideways
+through a hole in the housing wall** — which in turn means a *side-actuated* switch,
+whose plunger fires parallel to the board rather than perpendicular to it.
+
+**Take the variant with locating bosses.** Side actuation pushes the part in exactly the
+plane that peels SMD pads, and every press for the next ten years lands there. The bossed
+version drops two 0.7-0.8 mm posts into holes in the board, so the press force goes into
+the board instead of into four solder joints; the pad-only version is the same switch with
+nothing resisting that load. The seller distinguishes the two as *with points* and
+*nopoints*, and only the former is acceptable here.
+
+**The part is a CTS Series 225B in all but the label.** The AliExpress listing gives no
+manufacturer and its own drawing is a low-resolution JPEG, but the form factor — 7.8 x 3.5
+mm, gullwing, side actuating, offered with and without boss — is CTS's `225BM...RB1(S)`
+family, which has a real datasheet with a toleranced PCB layout. The footprint is built
+from that, read out of the PDF as vector geometry rather than measured off a scan. The
+listing's own drawing agrees to within 0.05 mm in X, which is the cross-check that the
+two really are the same part.
+
+That has a pleasant consequence: **a genuine CTS part is a drop-in replacement.** The boss
+holes are drilled to CTS's 1.0 mm rather than the clone's 0.9 mm, which accepts both the
+0.8 mm CTS boss and the 0.7 mm clone boss. If the cheap switch ever wears out, a
+distributor part with a ten-year availability guarantee solders straight onto the same
+land.
+
+**Do not trust the terminal numbers.** CTS numbers the switch contacts 1/2 and the linked
+frame 3/4; the clone numbers them the other way round. What is identical on both is the
+geometry: the **small inboard pads are always the switch** and the **large outboard pads
+are always the frame**. The footprint therefore labels the frame pads `SH` rather than
+giving them numbers, which pairs with KiCad's stock `Switch:SW_Push_Shielded` symbol and
+leaves nothing to get backwards. Both `SH` pads go to `GND` — the datasheet draws that pair
+tied to earth, and they are the pads taking the mechanical load, so they want a solid
+connection regardless.
+
+Electrically it is the dullest circuit on the board: `R11` pulls GPIO10 up to 3V3 so the
+pin is defined while the ESP32 boots with its GPIOs floating, `SW1` shorts it to ground
+when pressed, and `C9` swallows contact bounce plus whatever static comes in through the
+opening the plunger pokes out of. See the pin map for why GPIO10 and not GPIO9.
+
+Two things are still open. The footprint has **no 3D model** yet, so it will show as an
+empty outline in the 3D viewer. And although the land pattern comes from a real datasheet,
+the part being soldered to it does not — so **put a caliper on one of the delivered
+switches before the board is fabbed**, checking the 7.8 mm lead span, the 2.3 mm boss pitch
+and the boss diameter. While it is in hand, confirm the one thing a caliper cannot: that
+**the plunger comes out on the same side as the two large frame pads**, which is what the
+footprint assumes and what decides which board edge the part goes on. Both checks take two
+minutes and guard against a mistake that is unrecoverable once boards are ordered.
+
 ### Choosing the 74LVC1G07 package
 
 TI sells this die in several packages and only one is sensible to hand-solder:
@@ -407,8 +468,12 @@ records that `D1.1` must be called `K`, `Q1.2` must be `S`, and so on — so a p
 pinout slip fails generation loudly instead of reaching the board. It also refuses to emit
 unless every pin of every part is either on a net or explicitly marked no-connect.
 
-Current state: **0 ERC violations, 36 symbols, 22 nets, 88 wired pins, 14 no-connects**, and
+Current state: **0 ERC violations, 39 symbols, 23 nets, 96 wired pins, 13 no-connects**, and
 the exported netlist matches `design.py` exactly.
+
+`gen_sch.py` is also **idempotent** — running it twice leaves a byte-identical
+`board.kicad_sch` — so a noisy diff after regenerating means something in `design.py`
+actually changed, not that the generator reshuffled the file.
 
 ### Two symbols are deliberately not the obvious ones
 
@@ -552,6 +617,40 @@ it as a 725-point face, so the correct offset is **zero**. What lies below are t
 through-hole pin stubs, which belong below the board and are hidden inside it — we solder
 the module SMD, without headers. The lesson generalises: pick the seating plane by finding
 the dominant planar face, not by taking the model's extreme.
+
+**`SW1` is done: `electra:SW_Push_Side_CTS_225B_7.8x3.5mm_Boss`.** Pads 1/2, the switch
+contacts, are **1.00 x 1.25 mm on 4.30 mm centres**; the two `SH` frame pads are
+**1.50 x 1.20 mm on 6.80 mm centres**, giving the datasheet's 8.30 mm overall span; the two
+boss holes are **Ø1.0 mm NPTH on a 2.30 mm pitch**. The origin sits midway between those
+holes, because the bosses are the mechanical datum — the part body centre is 0.15 mm off it.
+The switch note above covers why this part and why the bossed variant.
+
+This is the first footprint here taken from a datasheet by **reading the PDF's vector
+geometry** rather than measuring a raster drawing, which is worth doing whenever the source
+allows: the hole pitch came out at 32.59 pt for a stated 2.30 mm, giving a 14.17 pt/mm scale
+against which every other callout reconciled to three decimal places. That is also how the
+listing's own ambiguous drawing got resolved — its `4.2` turns out to be a **centre-to-centre**
+dimension, not the outer span it looks like, which is why `3.3 + 0.9 + 0.9` never added up
+to its stated `5.3`.
+
+Two dimensions sit **0.05 mm off the CTS figures on purpose**, and are recorded in the
+footprint's own description so nobody later "corrects" them. Pads 1/2 are on 4.30 mm centres
+rather than CTS's 4.20, which lines their inner edges up with the clone's 3.30 mm gap and
+lifts the copper-to-hole-wall clearance to **0.207 mm** — just past the 0.2 mm most fabs
+want, where the CTS geometry alone gives 0.173 mm. The `SH` pads reach 0.05 mm further
+inboard than CTS's 5.40 mm inner span so they cover the clone's 5.30 as well. The rule
+throughout was to **grow pads away from the holes, never toward them**.
+
+> **`SW1` has to go at a board edge, and the direction is not arbitrary.** The plunger fires
+> in **+Y**, drawn on the fab layer as an arrow with the actuator body it pushes through.
+> That edge must face the housing wall the button pokes through, and nothing may sit in the
+> press path — which is why the courtyard is drawn generously on that side rather than tight
+> to the copper. CTS orders actuator length as a variable, so the exact protrusion depends
+> on which part arrives.
+
+It has **no 3D model**, the only footprint in the library without one, so it renders as a
+bare outline. Nothing depends on it except enclosure clearance, which is exactly the check
+this part will eventually need — so it is worth adding once a STEP is to hand.
 
 ### Confirm the relay contacts with a meter before ordering a board
 
@@ -1201,10 +1300,16 @@ first flash happens on the bench and everything after that is OTA.
 | CAN TX | 21 | out | via buffer, **10 k pull-up to 3V3** |
 | Speaker relay | 6 | out | via transistor |
 | Status LED data | 7 | out | via 330 R |
-| *spare* | 0, 1, 3, 4, 5, 10 | | available if needed |
+| Mode button | 10 | in | active low, **10 k pull-up to 3V3** (`R11`), 100 nF (`C9`) |
+| *spare* | 0, 1, 3, 4, 5 | | available if needed |
 
-Unavailable on the C5: **GPIO11-17** are the SPI flash, **GPIO18/19** are the native
+Unavailable on the C3: **GPIO11-17** are the SPI flash, **GPIO18/19** are the native
 USB, and **GPIO2/8/9** are strapping pins best left alone.
+
+GPIO10 is the right home for a button precisely because it is none of those. Put the
+button on GPIO9 and holding it down while the unit powers up drops the ESP32 into
+serial download mode instead of booting the firmware — a fault that would look like a
+dead device and would be maddening to diagnose behind a wall plate.
 
 ## Where to tap on the unit
 
@@ -1291,6 +1396,18 @@ INTERCOM TERMINAL BLOCK (Line OUT, unused)
    (Fallback if a bench check shows weak blue/green - see the LED note:
     GPIO7 ---[ 330R ]---|>|--- GND   red   = Silent armed
     GPIO5 ---[ 330R ]---|>|--- GND   amber = Auto-open armed)
+
+   ---- MODE BUTTON ----
+   3V3 ---[ 10k ]---+-------------------> GPIO10
+                    |
+                    +---[ 100nF ]------- GND
+                    |
+                    +--> SW1 pad 1 (switch)
+                         SW1 pad 2 (switch) -------> GND
+                         SW1 both SH pads (frame) -> GND
+   Idle high, pressed low. GPIO10 is not a strapping pin on the C3, so a stuck
+   or held button cannot stop the module booting.
+   Mount at a board edge, plunger facing the housing wall, press path kept clear.
 ```
 
 **The relay coil runs off raw `+U`, not the regulated rail.** The coil current never
@@ -1487,6 +1604,11 @@ Each step is safe alone and verifies one thing. Do not skip ahead.
 5. **Transmit.** Press "Open door" with the line idle.
 6. **Relay last.** Fit the JST adapter, arm Silent, ring, confirm silence, then answer
    and confirm you can hear.
+7. **Mode button, on the bench without the button.** `SW1` only exists on the PCB, but
+   the firmware side tests now: the pull-up is on the board, so **momentarily shorting
+   GPIO10 to GND with a jumper wire is a press**. Confirm each one advances the state and
+   that the status LED follows. Worth doing before the PCB exists, because it is the
+   cheapest time to find out the state machine does the wrong thing.
 
 ## Permanent install
 
@@ -1496,3 +1618,10 @@ antenna end of the SuperMini clear of metal, and route the fibre so the LED-to-f
 junction is shrouded in opaque heat-shrink. Confirm the intercom behaves normally with the case
 closed — the touch pads are capacitive and dislike conductive things pressed against
 them.
+
+The mode button adds one mechanical constraint to that: `SW1`'s plunger has to line up
+with an opening in the housing wall, so **the board's position is now fixed in two axes,
+not just tucked in wherever it fits**. Establish where that opening can go before
+committing to a board outline, and remember the plunger travel is only a few tenths of a
+millimetre — a hole that is a little too deep or slightly misaligned turns the button into
+one that never quite actuates.

@@ -48,6 +48,15 @@ PARTS = {
     'C3':  ('Device:C', '22uF', C1210, 235, 105, 'right'),
     'C4':  ('Device:C', '22uF', C1210, 260, 105, 'right'),
     'C8':  ('Device:C', '10uF', C1206, 285, 105, 'right'),
+    # --- mode button ------------------------------------------------------
+    # Side-actuated switch: the plunger fires parallel to the board, so SW1
+    # has to sit at a board edge with its F.Fab arrow pointing off-board. Its
+    # two locating bosses drop into the footprint's NPTH holes and take the
+    # press force, which is the whole reason for choosing the bossed variant.
+    'SW1': ('Switch:SW_Push_Shielded', 'Mode button',
+            'electra:SW_Push_Side_CTS_225B_7.8x3.5mm_Boss', 50, 140, 'top'),
+    'R11': ('Device:R', '10k', R0603, 95, 140, 'right'),
+    'C9':  ('Device:C', '100nF', C0603, 125, 140, 'right'),
     # --- MCU --------------------------------------------------------------
     'U3':  ('electra:ESP32-C3_SUPERMINI_SMD', 'ESP32-C3 SuperMini',
             'electra:MODULE_ESP32-C3_SUPERMINI', 75, 180, 'top'),
@@ -115,7 +124,7 @@ NETS = {
         ('L1', '2', '2'), ('U1', '1', 'FB'), ('C3', '1', None), ('C4', '1', None),
         ('C8', '1', None), ('U3', '3.3', '3V3'), ('U2', '5', 'VCC'),
         ('C7', '1', None), ('LED1', '1', 'VDD'), ('R4', '1', None),
-        ('D3', '2', 'K'), ('#FLG2', '1', None),
+        ('D3', '2', 'K'), ('R11', '1', None), ('#FLG2', '1', None),
     ],
 
     'GND': [
@@ -124,7 +133,8 @@ NETS = {
         ('U1', '4', 'GND'), ('C3', '2', None), ('C4', '2', None),
         ('C8', '2', None), ('U2', '3', 'GND'), ('C7', '2', None),
         ('U3', 'G', 'GND'), ('LED1', '3', 'VSS'), ('D3', '1', 'A'),
-        ('Q2', '2', 'E'), ('R8', '2', None), ('#FLG3', '1', None),
+        ('Q2', '2', 'E'), ('R8', '2', None), ('C9', '2', None),
+        ('SW1', '2', '2'), ('SW1', 'SH', 'B'), ('#FLG3', '1', None),
     ],
 
     # TWAI TX out of the ESP32 into the open-drain buffer. R4 holds the line
@@ -147,6 +157,16 @@ NETS = {
     'LED_DATA': [('U3', '7', 'GPIO7'), ('R10', '1', None)],
     'LED_DIN': [('R10', '2', None), ('LED1', '4', 'DIN')],
 
+    # Mode button, active low. GPIO10 has no strapping function on the C3, so
+    # holding the button down at power-up cannot put the chip into download
+    # mode the way GPIO9 would. R11 defines the pin while the ESP32 boots with
+    # its GPIOs floating, and C9 absorbs contact bounce plus whatever ESD comes
+    # in through the housing opening the plunger pokes out of.
+    'BTN': [
+        ('U3', '10', 'GPIO10'), ('R11', '2', None),
+        ('SW1', '1', '1'), ('C9', '1', None),
+    ],
+
     # Speaker path. Both relay poles are paralleled: de-energised the speaker
     # is connected (fail-safe), and two contacts in parallel lower contact
     # resistance and add redundancy on a low-level audio signal.
@@ -158,7 +178,7 @@ NETS = {
 
 # Pins deliberately left open.
 NO_CONNECT = (
-    [('U3', p) for p in ('0', '1', '2', '3', '4', '5', '8', '9', '10', '5V')]
+    [('U3', p) for p in ('0', '1', '2', '3', '4', '5', '8', '9', '5V')]
     + [('U2', '1'), ('LED1', '2'), ('K1', '2'), ('K1', '7')]
 )
 
