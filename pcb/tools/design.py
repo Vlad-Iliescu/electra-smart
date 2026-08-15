@@ -81,7 +81,15 @@ PARTS = {
     'LED1': ('LED:WS2812B', 'WS2812B-V6',
              'LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm', 280, 245, 'right'),
     # --- speaker pass-through --------------------------------------------
-    'J2':  ('Connector:Conn_01x02_Socket', 'To intercom J101', TODO_FP, 340, 235, 'top'),
+    # The wire ends solder into two plated 0.7 mm holes, and the 2.0 mm holes
+    # 9 mm behind them are the strain relief: the wire feeds through those so any
+    # pull is taken by the board rather than by the solder joints. Stock KiCad
+    # part, dimensioned for a 0.5 mm conductor in 1.5 mm insulation, which is
+    # silicone-clad 26 AWG. Genderless symbol because nothing plugs in on this
+    # end - it is bare pads, not a socket.
+    'J2':  ('Connector_Generic:Conn_01x02', 'To intercom J101',
+            'Connector_Wire:SolderWire-0.15sqmm_1x02_P4mm_D0.5mm_OD1.5mm_Relief',
+            340, 235, 'top'),
     'J3':  ('Connector:Conn_01x02_Socket', 'Speaker',
             'Connector_JST:JST_GH_BM02B-GHS-TBT_1x02-1MP_P1.25mm_Vertical',
             340, 265, 'top'),

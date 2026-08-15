@@ -68,7 +68,7 @@ section for which choices actually matter and which are theatre.
 | **LED1** | 1 | **`WS2812B`**, ideally `V6` | SMD single pixel, **3535 `MINI`** or 5050 | Status LED. **3.3-5.5 V, so in spec on our rail** - and `V6` specifically optimises constant-current drive at 3.3 V. **Not an `SK6812`** (3.5 V / 3.7 V) and **not `WS2812E`/`S`** (3.8 V). Take the `B` over the `C` for its internal cap and reverse-connection protection. **Not a distributor part**: AliExpress or similar, buy a handful and bench-check one - see the LED note |
 | **SW1** | 1 | **Side-actuated SMD tact switch, 7.8 x 3.5 x 3.8 mm, _with bosses_** | 4-pad gullwing + 2 locating bosses | Mode button. Functionally a **CTS `225BM...RB1(S)`**, whose datasheet supplied the land pattern. From the AliExpress assortment take **variant No.5** and make sure it is a *with points* version - the bosses are what carry the side press. **Not a distributor part**: buy the 50-piece lot, and see the switch note for why the bossed variant is not optional here |
 | **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here**, so no crimping on that side. From the 10-set AliExpress kit - **fit-test one against the speaker plug before drawing the footprint** |
-| **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note |
+| **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note. The board end has no connector: the wires solder into plated holes with a feed-through strain relief, so nothing extra is needed there either |
 | **F1** | 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
 | **R4** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
 | **R8** | 1 | 10 k resistor, same part as R4 | 0603 | Base-to-emitter on `Q2` - see the Vces note |
@@ -316,6 +316,40 @@ conclusive — that is exactly the error you get with the caliper jaws inside th
 **~4.2 mm means 1.0 mm SH, ~5.0 mm means 1.25 mm**, ~5.6 mm means 1.5 mm ZH. If it turns out
 to be 1.0 mm SH, the kit is the wrong pitch and both `J2` and `J3` need re-buying — which is
 the whole reason to measure before the PCB is drawn.
+
+### The board end of the speaker lead
+
+`J2`'s two wires **solder straight into the board**, with no connector. That is not a
+compromise: the lead is already removable at the other end, where a crimped plug mates with
+the intercom's `J101`, so a second connector here would add a failure point and eat scarce
+space to make removable something that already is.
+
+**They land in plated through holes, not on SMD pads, and the reasoning is worth recording
+because the instinct to stay all-SMD is strong and wrong here.** A wire soldered to an SMD
+pad is held only by the copper's peel strength off the laminate, so any bending moment at the
+joint works to lift the pad clean off. A plated hole puts that load into the barrel and both
+annular rings instead. And nothing is gained by staying SMD, because **this joint is hand-made
+either way** — no stencil, no paste, no placement and no reflow ever touches it. The only
+thing "keeping it SMD" would buy is the absence of a drilled hole, and the design needs holes
+here regardless for the strain relief, so the plated version is free at fab.
+
+KiCad's library is a blunt witness on this. `Connector_Wire.pretty` exists for exactly this
+job and contains **330 footprints, every one through-hole**, without a single `attr smd`
+among them.
+
+**The strain relief is a feed-through, not a cable tie**, which was the other tempting option.
+The wire threads down through its own Ø2.0 mm hole, runs along the far face for 9 mm and comes
+back up into the solder hole, so the board is clamped between two runs of wire. Three reasons
+that wins over a tie in this build: it adds **zero height**, where a tie head is a bulky
+2-3 mm on a board that has to disappear behind the intercom's own PCB; nylon **creeps** when
+warm and this box is sealed and permanent, so a tie that is snug now may not be in five years;
+and it needs **no extra part** to lose or forget. A standard 2.5 mm tie would also need holes
+bigger than Ø2.5 mm to thread, which is more board than the relief holes cost.
+
+Assembly order matters, and it is the opposite of the obvious one: **thread both wires through
+the relief holes first, then trim and solder.** Solder first and the relief holes become
+unusable without desoldering. Strip only what the barrel needs, so no bare conductor is left
+in the channel between the two.
 
 ### The mode button
 
@@ -584,13 +618,40 @@ it was generated for a **Nichicon** part.
 Note that KiCad's nearest stock fuse footprint was 2512 (6.35 x 3.2 mm) — close enough to
 2410 to look right and wrong enough to matter. That is the trap this library exists to avoid.
 
-**Two more depend on measurements we have not taken**, and are the same open questions the
-speaker-connector section already flags:
+**`J2` is done, and it needs no custom footprint at all:
+`Connector_Wire:SolderWire-0.15sqmm_1x02_P4mm_D0.5mm_OD1.5mm_Relief`.** The two wire ends
+solder into **plated Ø0.7 mm holes on 4 mm centres**, and the **Ø2.0 mm holes 9 mm behind
+them are the strain relief** — the wire feeds down through one, runs along the far face and
+comes back up into its solder hole, so the board itself grips the cable and any tug is taken
+by laminate rather than by a solder joint. See the speaker-lead note for why this beats both
+SMD pads and a cable tie.
+
+Two things made this a stock part rather than a drawn one. KiCad has an entire library for
+soldered wire connections, `Connector_Wire`, and the size that matches is dimensioned for a
+**0.5 mm conductor in 1.5 mm insulation** — which is exactly silicone-clad 26 AWG, where the
+otherwise-tempting `0.127sqmm` variant assumes 1.0 mm insulation and would have made the
+relief hole too tight to thread. Its 9 mm relief spacing is the datasheet bend radius of
+3x the outer diameter, taken twice.
+
+It costs a **7 x 12 mm strip** of board, which sounds like a lot until you notice most of it
+is empty laminate: the only features are four holes. Tracks may run through the middle, and
+the courtyard is there to stop *components* being placed in the wire's channel, not copper.
+
+The symbol changed with it, from `Connector:Conn_01x02_Socket` to the genderless
+`Connector_Generic:Conn_01x02`, because there is no socket on this end — it is bare holes.
+Both spell their pins `Pin_1`/`Pin_2`, so nothing else in `design.py` had to move. `J3` keeps
+the socket symbol, since that one really is a socket.
+
+**One remaining footprint depends on a measurement we have not taken:**
 
 | Ref | Part | Blocked on |
 |---|---|---|
 | `J3` | Speaker header | Placeholder is `JST_GH_BM02B-GHS-TBT_1x02-1MP_P1.25mm_Vertical`. Right **pitch** at last — the earlier sheet had a 2.00 mm JWPF footprint — but generic "JST 1.25" parts often differ from genuine GH in the mounting tabs, so fit-test the kit header against the speaker's factory plug |
-| `J2` | Lead to `J101` | Two solder pads or a 1x02; decide once `J101`'s housing length is measured (~4.2 mm = 1.0 mm SH, ~5.0 mm = 1.25 mm) |
+
+Measuring `J101`'s housing is still needed, but it was never a blocker for `J2` as this
+document previously implied. That measurement decides which **plug** to crimp for the `J101`
+end; it says nothing about where the other ends of the wires land on our board, and those are
+independent choices.
 
 `J1`, the intercom tap, is also empty pending a decision on whether it is a header or
 solder pads.
@@ -1398,7 +1459,9 @@ INTERCOM TERMINAL BLOCK (Line OUT, unused)
    J2 pin 2 runs straight to J3 pin 2.
    De-energised = COM-NC closed = speaker connected = rings normally.
 
-   J2 = 1.25 mm housing + crimped terminals (PA-09), wire ends soldered to the board
+   J2 = 1.25 mm housing + crimped terminals (PA-09) at the J101 end; at our end the
+        two wires feed through the Ø2.0 mm relief holes, then solder into the plated
+        Ø0.7 mm holes 9 mm away. Thread before soldering, not after.
    J3 = 1.25 mm SMD vertical header on our board, the speaker's factory plug goes here
    Route the pair together and away from L1 and SW.
 

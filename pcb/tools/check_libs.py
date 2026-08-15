@@ -22,7 +22,7 @@ PROJ = ROOT / 'pcb' / 'libs'
 
 # Footprints deliberately left empty until a real-world measurement is taken.
 # gen_sch.py emits them blank on purpose, so they are not failures here.
-PENDING = {'J1', 'J2'}
+PENDING = {'J1'}
 
 
 def resolve_fp(fp):
