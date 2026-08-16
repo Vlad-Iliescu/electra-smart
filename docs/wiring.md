@@ -8,6 +8,12 @@ is in [../esphome/](../esphome/).
 altered.** Power and bus come off screw terminals that are already there, and the
 speaker intercept is a plug-in adapter. Everything is reversible by unplugging.
 
+The one place this may have to bend is the speaker, and only if the intercom's 1.25 mm
+connector turns out to be a family the kit cannot mate. The [fallback](#if-the-factory-plug-does-not-mate)
+trades two solder joints on the speaker for certainty about the fit. It is opt-in at assembly
+time and does not change the board at all, so treat the principle as intact unless the
+fit-test says otherwise.
+
 ## Where to buy (Romania)
 
 **Mouser RO** can supply the entire BOM in one order — it is an authorised distributor
@@ -67,7 +73,7 @@ section for which choices actually matter and which are theatre.
 | **D3** | 1 | **onsemi BAT54SLT1G** | SOT-23, *series* pair | Clamps the CAN RX pin to the rails. 30 V, 200 mA, Vf **0.32 V max at 1 mA**, Ct 10 pF. **If `SBAT54SLT1G` is also in stock take that instead** - leading `S` = AEC-Q101 + PPAP, same die, see note |
 | **LED1** | 1 | **`WS2812B`**, ideally `V6` | SMD single pixel, **3535 `MINI`** or 5050 | Status LED. **3.3-5.5 V, so in spec on our rail** - and `V6` specifically optimises constant-current drive at 3.3 V. **Not an `SK6812`** (3.5 V / 3.7 V) and **not `WS2812E`/`S`** (3.8 V). Take the `B` over the `C` for its internal cap and reverse-connection protection. **Not a distributor part**: AliExpress or similar, buy a handful and bench-check one - see the LED note |
 | **SW1** | 1 | **Side-actuated SMD tact switch, 7.8 x 3.5 x 3.8 mm, _with bosses_** | 4-pad gullwing + 2 locating bosses | Mode button. Functionally a **CTS `225BM...RB1(S)`**, whose datasheet supplied the land pattern. From the AliExpress assortment take **variant No.5** and make sure it is a *with points* version - the bosses are what carry the side press. **Not a distributor part**: buy the 50-piece lot, and see the switch note for why the bossed variant is not optional here |
-| **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here**, so no crimping on that side. From the 10-set AliExpress kit - **fit-test one against the speaker plug before drawing the footprint** |
+| **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here** if it mates, and a plug crimped from the same kit if it does not. From the 10-set AliExpress kit; footprint is drawn from the vendor sheet, so **fit-test one against the speaker plug to settle the topology**, not the land pattern |
 | **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note. The board end has no connector: the wires solder into plated holes with a feed-through strain relief, so nothing extra is needed there either |
 | **F1** | 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
 | **R4** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
@@ -211,7 +217,32 @@ what the arrangement below needs. The vertical header becomes `J3` and **the spe
 factory plug mates straight into it**, so nothing is crimped on the speaker side at all; the
 `J101` end is a housing and two terminals crimped onto a flying lead, and **the Engineer
 PA-09 needed for that is already on hand**. So the electrical BOM is complete — see the
-speaker connector section for the two checks to run before drawing the footprint.
+speaker connector section for the fit-test that decides how the speaker gets attached.
+
+The listing is *10sets MICRO JST 1.25 2/3/4/5/6/7/8/9/10 Pin Connector 1.25MM Pitch Vertical /
+Horizontal SMD Pin Header + Housing + Terminal*, and its stated contents — ten receptacles, ten
+housings and the matching loose terminals per set — confirm that one order covers both
+connectors several times over. What it never states is the **family**. It says only "JST 1.25",
+gives no current, voltage or AWG rating, and the only mechanical figure it publishes is a
+**4.25 mm** body for the 2-way part.
+
+**The vendor datasheet in [datasheets/](datasheets/) settles it: this is not JST GH.** Its own
+table gives the 2-way header a 4.25 mm body where genuine GH measures 5.75 and PicoBlade 7.65.
+Look at how the body scales and the family becomes obvious — the kit's body is always the pin
+span **plus 3.0 mm**, which is precisely JST SH's proportion (SH 2-way is 4.00 mm on a 1.00 mm
+pitch), where GH adds 4.5 mm and PicoBlade 6.4 mm. So the part is an **SH-shaped connector
+scaled to a 1.25 mm pitch**, which is exactly the "LiPo balance lead" clone the section above
+warns about, and it is unlikely to intermate with either genuine family.
+
+That has a consequence beyond the footprint: it makes the fit-test against the intercom a
+genuine coin-flip rather than a formality, so the [fallback](#if-the-factory-plug-does-not-mate)
+is now the more probable path rather than a contingency.
+
+> **Trap in that datasheet, for whoever reads it next.** Both its drawings and its photo bracket
+> the *outermost* span and label it "A", which invites you to read A as the overall length. It is
+> not. The table's A column is exactly (n-1) x 1.25 on all fifteen rows, which can only be the
+> pin span, so **A is the pin span and B is the body length** and the artwork's letters are
+> shifted against its own table. Trust the arithmetic, not the brackets.
 
 ### Notes on the SMD choices
 
@@ -301,21 +332,104 @@ PCB, so **route it as a pair, away from `L1` and the `SW` node** — the pair is
 and driven by an amplifier so it is not especially susceptible, but there is no reason to
 run audio under a 1.1 MHz switching node.
 
-**The one test to do before committing a footprint.** 1.25 mm is not a single family:
+**The one test that decides the topology.** 1.25 mm is not a single family:
 genuine JST GH, Molex PicoBlade and the cheap "JST 1.25" sold for LiPo balance leads share
 the pitch but differ in latch and polarisation, and **do not reliably intermate**. This now
 matters more than it used to, because the speaker's factory plug has to mate with *our*
 header rather than with a bought cable. There are ten sets in the kit, so **take one
-vertical header and try the speaker's plug on it by hand.** If it seats and latches, the
-footprint is settled. If it does not, the intercom uses a different 1.25 mm family and the
-header has to match it instead.
+vertical header and try the speaker's plug on it by hand.** If it seats and latches, the plug-in
+arrangement above stands. If it does not, **do not go hunting for the matching family** — take the
+fallback below instead, which needs no new parts and no identification at all. Either way the
+footprint is unaffected, because `J3` is the kit's own header in both arrangements.
+
+Expect this one to fail, incidentally. The vendor sheet shows the kit is an SH-proportioned clone
+rather than genuine GH, so it will only mate the intercom if the intercom uses the same clone
+family — plausible for a Chinese-built unit, but no better than a coin-flip.
 
 And confirm the pitch itself first, since the ~1.08 mm pin-centre reading was never
 conclusive — that is exactly the error you get with the caliper jaws inside the pin centres.
-**Housing length across both pins** scales with pitch and is far easier to measure:
-**~4.2 mm means 1.0 mm SH, ~5.0 mm means 1.25 mm**, ~5.6 mm means 1.5 mm ZH. If it turns out
-to be 1.0 mm SH, the kit is the wrong pitch and both `J2` and `J3` need re-buying — which is
-the whole reason to measure before the PCB is drawn.
+Measure the **length of the header body on the intercom's board** instead, which is a far
+easier reading to take than a two-pin span. These are the real numbers for a 2-way header,
+pulled from KiCad's footprints and therefore from the manufacturers' own drawings:
+
+| Family | Pitch | 2-way body length |
+|---|---|---|
+| JST SH | 1.00 mm | **4.00 mm** |
+| JST GH | 1.25 mm | **5.75 mm** |
+| JST ZH (`B2B-ZR-SM4-TF`) | 1.50 mm | **6.00 mm** |
+| Molex PicoBlade | 1.25 mm | **7.65 mm** |
+
+**Read that table for what it does and does not settle.** It separates the two parts most
+likely to be confused here superbly: GH and PicoBlade are both 1.25 mm pitch yet differ by
+nearly 2 mm of body, so a caliper tells them apart at a glance. It is nearly useless for GH
+against ZH, which differ by 0.25 mm — less than the error of measuring moulded plastic in
+situ — so if the reading lands anywhere near 5.75-6.00 mm the pin span has to break the tie
+after all.
+
+An earlier version of this section claimed ~4.2 mm meant 1.0 mm SH, ~5.0 mm meant 1.25 mm and
+~5.6 mm meant 1.5 mm ZH. Only the first was close. The others were wrong in the dangerous
+direction, because a genuine GH header reads **5.75 mm** and those numbers would have had it
+misread as ZH — sending us off to re-buy an entire kit in the wrong pitch.
+
+If it does turn out to be 1.0 mm SH, the kit is the wrong pitch outright and both `J2` and
+`J3` need re-buying — which is the whole reason to measure before the PCB is drawn.
+
+#### If the factory plug does not mate
+
+Worth reading *before* the unit is opened, because it changes what the fit-test means: a
+failure stops being a blocker and becomes a choice. **Reuse the factory plug where it already
+fits, and move the soldering to the speaker instead.**
+
+```
+   intercom J101 (male header)
+        |
+        |  the speaker's own factory lead - plug left untouched in J101
+        |
+   J2 = that lead's far end, desoldered from the speaker
+        and soldered into our board's plated holes
+        |
+   [ relay contact, as a PCB trace ]
+        |
+   J3 = 1.25 mm SMD vertical header on our board
+        ^
+        |  a new lead, both ends ours: kit housing crimped with the PA-09
+        |
+   soldered to the speaker's terminals
+```
+
+This eliminates **both** unknown matings in one move. The `J101` end keeps the factory plug in
+its factory socket, so that fit is guaranteed and the crimp is the OEM's rather than ours —
+worth something on the one joint carrying the audio, since a cheap terminal in an OEM housing
+is exactly where contact force goes marginal. And `J3` mates a plug from the same kit as its
+own header, so that fit is guaranteed by construction. Nothing has to be identified or matched.
+
+**Desolder the factory lead, never cut it.** That is the difference between a reversible
+modification and a one-way door. Desoldered, the lead stays one intact piece and reverting is
+just moving two joints back onto the speaker tabs. Cut, restoring stock needs either a splice
+or a `J101`-compatible plug — the exact unknown this arrangement exists to avoid.
+
+**The hazard is the speaker tabs, not reversibility.** On small dynamic drivers the voice
+coil's tinsel lead is usually soldered to the same tab, and cooking it turns this into "source
+a replacement OEM speaker". Low temperature, quick in and out, add fresh solder to wet the
+joint rather than dwelling, and put no pull on the tab.
+
+**Check the factory lead reaches first**, because this flips which lead constrains board
+placement. In the plug-in arrangement the fixed-length factory lead spans our board to the
+speaker and our crimped lead can be any length; here the factory lead has to span `J101` to
+our board and the new lead is the flexible one. If it will not reach, the splice needed to
+extend it hands back the reliability this was bought for, and the plug-in arrangement is the
+better bet.
+
+Serviceability is unchanged either way — pulling the board is still unplug at `J101`, unplug
+the speaker at `J3`, and the factory lead comes out still soldered to our board. That is also
+why `J3` stays a connector even though the speaker is being soldered anyway: that plug is what
+lets the board come out without touching the speaker a second time.
+
+**The board is identical under both arrangements**, which is what makes this safe to defer.
+`J3` is the kit's header in either case — if the kit mates the factory plug the plug-in
+arrangement works, and if it does not this one does — so the footprint is a superset and the
+layout is not blocked on the fit-test at all. The decision to desolder can be made later, with
+the unit open and the parts in hand.
 
 ### The board end of the speaker lead
 
@@ -633,6 +747,15 @@ otherwise-tempting `0.127sqmm` variant assumes 1.0 mm insulation and would have 
 relief hole too tight to thread. Its 9 mm relief spacing is the datasheet bend radius of
 3x the outer diameter, taken twice.
 
+**Which variant is right depends on which speaker arrangement wins**, and it is the one thing
+that choice touches on the board. The `OD1.5mm` size assumes *our* silicone-clad 26 AWG. Under
+the [fallback](#if-the-factory-plug-does-not-mate), `J2` carries the intercom's **factory**
+lead instead, which is likely thinner PVC nearer 1.0-1.2 mm, and a wire that rattles around in
+its relief hole is barely strain-relieved at all. If it measures near 1.0 mm, switch to
+`SolderWire-0.127sqmm_1x02_P3.7mm_D0.48mm_OD1mm_Relief`: Ø1.5 mm relief, the same Ø0.7 mm
+plated pads, and 3 mm shorter into the bargain. So caliper whichever wire will actually land
+here, not the spool on the shelf.
+
 It costs a **7 x 12 mm strip** of board, which sounds like a lot until you notice most of it
 is empty laminate: the only features are four holes. Tracks may run through the middle, and
 the courtyard is there to stop *components* being placed in the wire's channel, not copper.
@@ -642,13 +765,35 @@ The symbol changed with it, from `Connector:Conn_01x02_Socket` to the genderless
 Both spell their pins `Pin_1`/`Pin_2`, so nothing else in `design.py` had to move. `J3` keeps
 the socket symbol, since that one really is a socket.
 
-**One remaining footprint depends on a measurement we have not taken:**
+**`J3` is done too, and drawn rather than borrowed:
+`electra:Conn_MicroJST1.25-SHstyle_1x02-1MP_P1.25mm_Vertical_SMD`.** It briefly held
+`JST_GH_BM02B-GHS-TBT_1x02-1MP_P1.25mm_Vertical`, which was at least the right pitch — the sheet
+before that had a 2.00 mm JWPF footprint — but as the section above establishes, this part is not
+GH, and a footprint 1.5 mm too long in the body is a dead board. The vendor sheet carries its own
+PCB layout, so the land pattern comes from the manufacturer's drawing rather than from calipers:
+signal pads **0.50 x 1.60 mm** on the 1.25 mm pitch at x = ±0.625, and two **2.00 x 3.00 mm**
+anchor pads centred at x = ±1.60 on the far side of the part, with a **0.60 mm** gap between the
+two pad bands. The pattern is datumed on the origin, as KiCad datums its own SH and GH vertical
+footprints, which puts the signal row at y = +1.80 and the anchors at y = −1.10 — both between
+stock SH (+1.325 / −1.200) and stock GH (+1.950 / −1.400), and that is the check that the numbers
+came out in family.
 
-| Ref | Part | Blocked on |
-|---|---|---|
-| `J3` | Speaker header | Placeholder is `JST_GH_BM02B-GHS-TBT_1x02-1MP_P1.25mm_Vertical`. Right **pitch** at last — the earlier sheet had a 2.00 mm JWPF footprint — but generic "JST 1.25" parts often differ from genuine GH in the mounting tabs, so fit-test the kit header against the speaker's factory plug |
+**Two of them are reasoned rather than stated, so confirm them before fab.** The sheet never says
+what its `C` column measures. Read C = 3.20 as the plastic body and its ends fall at x = ±1.60,
+where anchor pads centred on those end edges land exactly as drawn; read `B` = 4.25 as the overall
+width including the metal tabs and that leaves 0.475 mm of pad proud of the part for a fillet,
+with 1.00 mm tucked under the body where the tab folds beneath. The competing reading — C as the
+anchor-pad centre span — independently gives the same ±1.60, and two incompatible readings
+agreeing on one answer is the reason to trust it. The second inference is that the sheet's lone
+0.60 figure is the band gap; stock SH leaves 0.85 mm there and GH 1.10 mm, so 0.60 is tight but
+in range. **On arrival, check the anchor-tab centre span reads 3.20 mm and the clear gap to the
+pin row 0.60 mm.**
 
-Measuring `J101`'s housing is still needed, but it was never a blocker for `J2` as this
+Geometry verifies: silkscreen-to-pad and pad-to-pad both at 0.200 mm or better, courtyard
+enclosing copper and body, and `fp upgrade` leaves the file alone. No 3D model yet, which makes
+two in the library without one.
+
+**`J1` is now the only empty footprint left.** Measuring `J101`'s housing is still needed, but it was never a blocker for `J2` as this
 document previously implied. That measurement decides which **plug** to crimp for the `J101`
 end; it says nothing about where the other ends of the wires land on our board, and those are
 independent choices.

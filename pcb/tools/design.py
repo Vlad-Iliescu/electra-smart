@@ -90,8 +90,14 @@ PARTS = {
     'J2':  ('Connector_Generic:Conn_01x02', 'To intercom J101',
             'Connector_Wire:SolderWire-0.15sqmm_1x02_P4mm_D0.5mm_OD1.5mm_Relief',
             340, 235, 'top'),
+    # Drawn from the vendor sheet, because this is not GH and the GH footprint
+    # that used to sit here would have been a dead board. The body scales as pin
+    # span + 3.0 mm, which is JST SH's proportion against GH's 4.5, so the part
+    # is an SH shape stretched to a 1.25 mm pitch. Two dimensions in the sheet
+    # are reasoned rather than stated - see the footprint's own description -
+    # so the anchor-tab span still wants a caliper before fab.
     'J3':  ('Connector:Conn_01x02_Socket', 'Speaker',
-            'Connector_JST:JST_GH_BM02B-GHS-TBT_1x02-1MP_P1.25mm_Vertical',
+            'electra:Conn_MicroJST1.25-SHstyle_1x02-1MP_P1.25mm_Vertical_SMD',
             340, 265, 'top'),
     # --- ERC power sources ------------------------------------------------
     '#FLG1': ('power:PWR_FLAG', 'PWR_FLAG', '', 250, 35, 'top'),
