@@ -707,9 +707,9 @@ renders the whole library on a scratch board so this is a look rather than a gue
 whenever a footprint gains a model.** A correct one sits *on* the board in the side view and
 *centred* on its pads from the top.
 
-**One part renders as empty space, out of 36** (`check_models.py`, 16 Aug 2026) — it was four
-before `SW1` and `J1` were drawn, below. The one left is `J3`, the 2-way connector, and it is a
-re-run of a script away. A second is not a gap at all: `J2`'s stock
+**Every part on the board now has a 3D model except one that needs none** — `check_models.py`
+reports *"35/36 parts have a 3D model, 1 need none, 0 still to draw"* as of 16 Aug 2026. It began
+at four missing. Three were drawn, below, and the fourth was never a gap: `J2`'s stock
 `Connector_Wire:SolderWire-…` footprint names
 `Connector_Wire.3dshapes/…`, and **that model package is absent from the install entirely** —
 the directory does not exist and no `SolderWire` model is anywhere under `3dmodels`, yet 324 of
@@ -752,6 +752,17 @@ drawing, and it agrees.
 Two cavity dimensions are inferred rather than dimensioned — the 0.40 mm wall and the 1.10 mm
 cavity floor — but neither affects fit or clearance, only how convincing the part looks in the
 3D view.
+
+**`J3` then cost one command**, `model_jst125.py 2`, and came out at 4.25 × 3.70 × 4.75 mm —
+matching the table's 2-way row of A = 1.25, C = 3.20, B = 4.25 exactly. That is the payoff for
+parameterising rather than drawing each one: the second connector needed no new measurements, no
+new reasoning, and could not disagree with the first about anything they share.
+
+One detail needed a second pass on `J1` and was worth fixing before it propagated. The anchor tabs
+initially perched on a 0.5 mm sliver of their 2.00 × 3.00 mm pads, because the tab metal is
+narrower than the copper. Left alone it would have read as a **footprint error** to anyone opening
+the 3D view later, so the feet now run in under the housing to cover the pad, with the overlap
+buried inside the plastic where it never shows.
 
 ### Drawing `SW1`'s model
 
@@ -889,8 +900,8 @@ in range. **On arrival, check the anchor-tab centre span reads 3.20 mm and the c
 pin row 0.60 mm.**
 
 Geometry verifies: silkscreen-to-pad and pad-to-pad both at 0.200 mm or better, courtyard
-enclosing copper and body, and `fp upgrade` leaves the file alone. No 3D model yet, which makes
-two in the library without one.
+enclosing copper and body, and `fp upgrade` leaves the file alone. It has a 3D model too, from the
+same script as `J1` — see the model section, which is also where the height finally got looked up.
 
 **`J1` is done too, on the same family: three ways instead of two —
 `electra:Conn_MicroJST1.25-SHstyle_1x03-1MP_P1.25mm_Vertical_SMD`.** Signal pads at
@@ -907,8 +918,8 @@ constant is not a coincidence, so the two inferred numbers are now much safer th
 Caliper them anyway when the parts land.
 
 Geometry verifies on the same terms as the 2-way: silkscreen-to-pad and pad-to-pad both 0.200 mm
-or better, courtyard enclosing copper and body, `fp upgrade` idempotent. **No 3D model**; with
-`SW1` since drawn, the two connectors are the only ones still missing theirs.
+or better, courtyard enclosing copper and body, `fp upgrade` idempotent. It has a 3D model, built
+from these same table figures by the script described in the model section.
 
 With that, **`check_libs` reports zero pending**: every symbol and footprint in the design now
 resolves from either this repository or a stock KiCad install. There are no empty footprints left.
