@@ -88,7 +88,7 @@ section for which choices actually matter and which are theatre.
 | **C9** | 1 | 100 nF ceramic, same part as C7 | 0603, 50 V | Debounce and ESD shunt across `SW1`, which is the one node deliberately exposed to a finger through the housing |
 | **C6** | 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
 | **C8** | 1 | 10 uF ceramic | 1206 | On 3V3 next to `U3`, for WiFi bursts. **Same part as C1** (`CGA5L3X5R1H106M160AB`), so that part is **2 per board**. Its 50 V rating means almost no DC-bias derating at 3.3 V, so you get a true 10 uF |
-| **J1** | - | 3-way tap to the intercom | wire at bench, header on the PCB | `+U`, `C/D`, `GND`. No part to buy yet, but the designator is fixed so the pinout has a name |
+| **J1** | 1 | **"JST 1.25" 3-pin SMD vertical header** + housing + 3 terminals | board-mount, from the **3P** variant of the same kit | `+U`, `C/D`, `GND` tap. Same family as `J2`/`J3`, so one crimp tool and one technique covers every connector on the board. **The 3P variant is a separate order**: the listing sells one pin count per purchase, so the 2P order that covers the speaker end does not include these |
 | - | - | 26-28 AWG silicone wire | | Thin and flexible; there is not much room |
 | - | - | Kapton tape, heat-shrink | | Insulating the install |
 | - | - | 2 mm end-glow PMMA fibre | + opaque heat-shrink | Light pipe to the case face (later) |
@@ -216,8 +216,12 @@ Vertical* variant is a board-mount header plus housings and loose terminals, whi
 what the arrangement below needs. The vertical header becomes `J3` and **the speaker's own
 factory plug mates straight into it**, so nothing is crimped on the speaker side at all; the
 `J101` end is a housing and two terminals crimped onto a flying lead, and **the Engineer
-PA-09 needed for that is already on hand**. So the electrical BOM is complete — see the
-speaker connector section for the fit-test that decides how the speaker gets attached.
+PA-09 needed for that is already on hand**. See the speaker connector section for the fit-test
+that decides how the speaker gets attached.
+
+**`J1` uses the same family in its 3-way form, and that is a second order to place.** The
+listing sells one pin count per purchase, so a 2P order covers the speaker end only and contains
+nothing that fits the intercom tap. Everything else on the BOM is bought.
 
 The listing is *10sets MICRO JST 1.25 2/3/4/5/6/7/8/9/10 Pin Connector 1.25MM Pitch Vertical /
 Horizontal SMD Pin Header + Housing + Terminal*, and its stated contents — ten receptacles, ten
@@ -793,13 +797,43 @@ Geometry verifies: silkscreen-to-pad and pad-to-pad both at 0.200 mm or better, 
 enclosing copper and body, and `fp upgrade` leaves the file alone. No 3D model yet, which makes
 two in the library without one.
 
-**`J1` is now the only empty footprint left.** Measuring `J101`'s housing is still needed, but it was never a blocker for `J2` as this
+**`J1` is done too, on the same family: three ways instead of two —
+`electra:Conn_MicroJST1.25-SHstyle_1x03-1MP_P1.25mm_Vertical_SMD`.** Signal pads at
+x = -1.25 / 0 / +1.25 and the same 2.00 x 3.00 mm anchor pads, now out at x = +/-2.225. Reusing
+the family here buys more than tidiness: one crimp tool, one technique and one spare-parts
+drawer then cover every connector on the board.
+
+**It also scaled exactly as the reading of the vendor table predicted, which is the strongest
+corroboration yet that the reading is right.** Row N=3 gives pin span 2.50, body C = 4.45 and
+overall B = 5.50. Drop those in and the anchor centres land precisely on the body edges again
+(C/2 = 2.225), and the pads again finish **0.475 mm proud** of the part's overall width — the
+identical overhang the 2-way part has. Two rows of the table independently agreeing on a derived
+constant is not a coincidence, so the two inferred numbers are now much safer than they were.
+Caliper them anyway when the parts land.
+
+Geometry verifies on the same terms as the 2-way: silkscreen-to-pad and pad-to-pad both 0.200 mm
+or better, courtyard enclosing copper and body, `fp upgrade` idempotent. **No 3D model**, which
+makes three in the library without one.
+
+With that, **`check_libs` reports zero pending**: every symbol and footprint in the design now
+resolves from either this repository or a stock KiCad install. There are no empty footprints left.
+
+One practical catch, though: **the 3-way parts are a separate order.** The listing sells one pin
+count per purchase, so the 2P order that covers `J2` and `J3` contains nothing that fits `J1`.
+
+`J1` also carries the **raw 13.5 V** tap, which is worth a sentence on a 1.25 mm pitch. Current
+is trivial — the board pulls a couple of hundred mA at 3.3 V, so well under 100 mA on the input
+side, against a connector family good for around 1 A. Voltage is equally undemanding: the pads
+leave roughly 0.75 mm of copper gap, where 13.5 V in a dry indoor enclosure needs a fraction of
+that. The clone publishes no ratings at all, but nothing here comes close to stressing it. The
+real reason to prefer a connector over solder pads is service: it lets the board be unplugged
+from power and bus without touching the intercom's screw terminals, which matters most during
+bring-up when the regulator is being checked in isolation.
+
+Measuring `J101`'s housing is still needed, but it was never a blocker for `J2` as this
 document previously implied. That measurement decides which **plug** to crimp for the `J101`
 end; it says nothing about where the other ends of the wires land on our board, and those are
 independent choices.
-
-`J1`, the intercom tap, is also empty pending a decision on whether it is a header or
-solder pads.
 
 **`U3` is done: `electra:ESP32-C3_SUPERMINI_SMD` + `electra:MODULE_ESP32-C3_SUPERMINI`.**
 The module was the last thing resolving through a personal library folder, and its symbol,

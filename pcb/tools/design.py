@@ -13,16 +13,22 @@ C1206 = 'Capacitor_SMD:C_1206_3216Metric_Pad1.33x1.80mm_HandSolder'
 C1210 = 'Capacitor_SMD:C_1210_3225Metric_Pad1.33x2.70mm_HandSolder'
 SOT23 = 'Package_TO_SOT_SMD:SOT-23'
 
-# Footprints that do not exist in the stock KiCad libraries or depend on a
-# measurement we have not taken yet. Left empty on purpose: an empty footprint
-# is caught later by the netlist/DRC step, whereas a plausible-but-wrong one
-# silently produces an unbuildable board.
+# Placeholder for a part whose footprint depends on a measurement not yet taken.
+# Empty on purpose: an empty footprint is caught by the netlist/DRC step, whereas
+# a plausible-but-wrong one silently produces an unbuildable board. Nothing uses
+# it at the moment - every part resolves - but keep it, and keep check_libs.PENDING
+# in step with it, so the next unknown part fails loudly instead of guessing.
 TODO_FP = ''
 
 # ref -> (lib_id, value, footprint, x, y, text_side)
 PARTS = {
     # --- input protection -------------------------------------------------
-    'J1':  ('Connector:Conn_01x03_Socket', 'Intercom +U/CD/GND', TODO_FP, 40, 35, 'top'),
+    # Same connector family as J3, three ways instead of two, so one kit covers
+    # both ends of the board. Carries the raw 13.5 V tap, which is the one thing
+    # to keep in mind on a 1.25 mm pitch - see the footprint description.
+    'J1':  ('Connector:Conn_01x03_Socket', 'Intercom +U/CD/GND',
+            'electra:Conn_MicroJST1.25-SHstyle_1x03-1MP_P1.25mm_Vertical_SMD',
+            40, 35, 'top'),
     'F1':  ('Device:Fuse_Small', '0453.250MR',
             'electra:Fuse_2410_6125Metric_Littelfuse_453', 75, 32.5, 'top'),
     'Q1':  ('Transistor_FET:DMP3099L', 'DMP4065SQ-7', SOT23, 110, 32.5, 'top'),

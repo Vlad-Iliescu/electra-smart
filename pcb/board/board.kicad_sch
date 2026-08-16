@@ -6703,7 +6703,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "electra:Conn_MicroJST1.25-SHstyle_1x03-1MP_P1.25mm_Vertical_SMD"
 			(at 39.37 35.56 0)
 			(hide yes)
 			(show_name no)

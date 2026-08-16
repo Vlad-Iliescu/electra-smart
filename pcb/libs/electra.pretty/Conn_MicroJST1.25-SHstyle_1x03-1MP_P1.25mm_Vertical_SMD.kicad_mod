@@ -1,0 +1,241 @@
+(footprint "Conn_MicroJST1.25-SHstyle_1x03-1MP_P1.25mm_Vertical_SMD"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "3-way 1.25 mm vertical (top-entry) SMD wire-to-board header with two anchor pads. Same unbranded part family as the 1x02 in this library, from the same vendor drawing in docs/datasheets/JST 1.25.pdf - read that footprint's description first, because it carries the full reasoning and the warning that this is NOT JST GH and must never be given a GH footprint. Row N=3 of the vendor table gives pin span A = 2.50 mm, overall width B = 5.50 mm and plastic body C = 4.45 mm. Land pattern: three signal pads 0.50 x 1.60 mm on the 1.25 mm pitch at x = -1.25 / 0 / +1.25, and two 2.00 x 3.00 mm anchor pads centred at x = +/-2.225 on the far side of the part, separated from the signal row by a 0.60 mm gap, all datumed on the origin so the signal row sits at y = +1.80 and the anchors at y = -1.10. The geometry scales from the 1x02 exactly as it should, which is the strongest evidence yet that the reading of the vendor's A/B/C columns is right: the anchor centres again fall precisely on the plastic body edges (C/2 = 2.225), and the anchor pads again finish 0.475 mm proud of the part's overall width (3.225 against B/2 = 2.75), the same overhang the 2-way part has. Two figures remain reasoned rather than stated, identically to the 1x02 - that C is the body and that the sheet's lone 0.60 is the band gap - so confirm the anchor-tab centre span reads 3.20 mm on the 2-way part and 4.45 mm here, and the clear gap to the pin row 0.60 mm, before committing to fab. F.Fab is the 5.50 x 3.70 mm overall envelope because the tab outline is not dimensioned; the two inner vertical lines mark x = +/-2.225 where the plastic ends and the tabs begin. This is J1, the intercom tap for +U / CD / GND, so it carries the raw 13.5 V line: the pads are on a 1.25 mm pitch with roughly 0.75 mm of copper gap between them, which is ample for 13.5 V in a dry indoor enclosure but is the reason to keep conformal coating or potting off the mating face and to seat the plug fully. No 3D model yet.")
+	(tags "connector jst 1.25 micro sh-style smd vertical wire-to-board")
+	(property "Reference" "REF**"
+		(at 0 -3.6 0)
+		(layer "F.SilkS")
+		(uuid "aa112233-4455-4a66-8b77-c899daabbcc1")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "VAL**"
+		(at 0 3.7 0)
+		(layer "F.Fab")
+		(uuid "bb223344-5566-4b77-8c88-d9aaebbccdd2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "cc334455-6677-4c88-8d99-eabbfccddee3")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "dd445566-7788-4d99-8eaa-fbccaddeeff4")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -2.81 0.66)
+		(end -2.81 1.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "66ddeeff-0011-4622-8733-24455667789d")
+	)
+	(fp_line
+		(start -2.81 1.36)
+		(end -1.76 1.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "77eeff00-1122-4733-8844-3556677889ae")
+	)
+	(fp_line
+		(start -0.96 -2.46)
+		(end 0.96 -2.46)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "55ccddee-ff00-4511-8622-13344556678c")
+	)
+	(fp_line
+		(start 1.76 1.36)
+		(end 2.81 1.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "88ff0011-2233-4844-8955-466778899abf")
+	)
+	(fp_line
+		(start 2.81 0.66)
+		(end 2.81 1.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "99001122-3344-4955-8a66-5778899aabc0")
+	)
+	(fp_circle
+		(center -2 2.35)
+		(end -1.9 2.35)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.SilkS")
+		(uuid "aa112233-4455-4a66-8b77-68899aabbcd1")
+	)
+	(fp_rect
+		(start -3.475 -2.85)
+		(end 3.475 2.85)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "bb223344-5566-4b77-8c88-799aabbccde2")
+	)
+	(fp_line
+		(start -2.75 -2.4)
+		(end -2.75 0.7)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "118899aa-bbcc-41dd-82ee-dff001122348")
+	)
+	(fp_line
+		(start -2.75 0.7)
+		(end -2.15 1.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2299aabb-ccdd-42ee-83ff-e00112233459")
+	)
+	(fp_line
+		(start -2.225 -2.4)
+		(end -2.225 1.3)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "33aabbcc-ddee-43ff-8400-f1122334456a")
+	)
+	(fp_line
+		(start -2.15 1.3)
+		(end 2.75 1.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ee556677-8899-4eaa-8fbb-accdeeff0015")
+	)
+	(fp_line
+		(start 2.225 -2.4)
+		(end 2.225 1.3)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "44bbccdd-eeff-4400-8511-02233445567b")
+	)
+	(fp_line
+		(start 2.75 -2.4)
+		(end -2.75 -2.4)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "00778899-aabb-40cc-81dd-ceeff0011237")
+	)
+	(fp_line
+		(start 2.75 1.3)
+		(end 2.75 -2.4)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ff667788-99aa-4fbb-80cc-bddeff001126")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -1.1 0)
+		(layer "F.Fab")
+		(uuid "cc334455-6677-4c88-8d99-8aabbccddef3")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.1)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -1.25 1.8)
+		(size 0.5 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(uuid "dd445566-7788-4d99-8eaa-9bbccddeeff4")
+	)
+	(pad "2" smd roundrect
+		(at 0 1.8)
+		(size 0.5 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(uuid "ee556677-8899-4eaa-8fbb-accddeeff005")
+	)
+	(pad "3" smd roundrect
+		(at 1.25 1.8)
+		(size 0.5 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(uuid "ff667788-99aa-4fbb-80cc-bddeeff00116")
+	)
+	(pad "MP" smd rect
+		(at -2.225 -1.1)
+		(size 2 3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "00778899-aabb-40cc-81dd-ceeff0011227")
+	)
+	(pad "MP" smd rect
+		(at 2.225 -1.1)
+		(size 2 3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "118899aa-bbcc-41dd-82ee-dff0011223f9")
+	)
+	(embedded_fonts no)
+)
