@@ -614,6 +614,13 @@ python pcb/tools/check_net.py
 python pcb/tools/check_libs.py
 ```
 
+A fifth, `python pcb/tools/check_models.py`, is advisory rather than pass/fail: it lists parts
+whose footprint has no 3D model, or references one that is not on disk. Nothing else reports
+this, because a missing model is not an electrical fault — ERC, the netlist diff and
+`check_libs` are all perfectly happy with an empty 3D view. It bites at layout time instead,
+when the 3D view is the cheapest way to catch a part fouling the enclosure or an electrolytic
+taller than the lid clears.
+
 ERC only proves the sheet is self-consistent, which is why `check_net.py` exists: it diffs
 the netlist KiCad actually exported against `design.py` and fails on any difference. The
 generator additionally **asserts pin names against the library symbols** — `design.py`
@@ -699,6 +706,63 @@ any enclosure or lid-clearance check, which is the one job these models have. `p
 renders the whole library on a scratch board so this is a look rather than a guess; **run it
 whenever a footprint gains a model.** A correct one sits *on* the board in the side view and
 *centred* on its pads from the top.
+
+**Three parts render as empty space, out of 36** (`check_models.py`, 16 Aug 2026) — it was four
+until `SW1` was drawn, below. The two left are ours: `J3` and `J1`, the 2- and 3-way connectors.
+The other is not ours at all: `J2`'s stock `Connector_Wire:SolderWire-…` footprint names
+`Connector_Wire.3dshapes/…`, and **that model package is absent from the install entirely** —
+the directory does not exist and no `SolderWire` model is anywhere under `3dmodels`, yet 324 of
+the 330 footprints in that library reference one. So it is an upstream gap, not a local
+breakage, and worth knowing before hunting for a mistake in our own paths.
+
+They are not equally worth fixing. **`SW1` earned one first**, because it is the only part whose
+position is constrained by something outside the board: the plunger has to line up with a hole in
+the housing wall and protrude far enough to be pressed. That is precisely the kind of thing a 3D
+view catches and a schematic never will. The two connectors matter second, and for a different
+reason — both are **top-entry**, so what needs checking is not the body footprint but the
+headroom above it for the plug and the fingers inserting it.
+
+### Drawing `SW1`'s model
+
+No vendor supplies a model for a kit part, so it is **built rather than downloaded**, by
+`pcb/tools/model_sw1.py` (cadquery, exports STEP). That is a deliberate choice over drawing it
+once by hand: the vendor drawing is a raster scan of an *unlabelled* projection, so several of
+its numbers are a reading rather than a transcription, and keeping every dimension as a named
+constant at the top of a script makes correcting one **a one-line edit and a re-run** instead of
+a remodelling job. Expect to correct one.
+
+What the drawing states plainly: overall **7.8 × 3.5 × 3.8 mm**, a **7.0 mm** plastic body, a
+**3 mm** wide plunger, **2 × Ø0.7 mm** bosses at 2.3 mm pitch, and a lead foot capped at 0.3 mm.
+
+**Two numbers are inferred, and they are the ones that matter most.** The drawing gives 3.5 mm
+of depth but never says how it divides between body and plunger. The model splits it as a
+**3.0 mm body with the plunger standing 0.5 mm proud**, because 3.0 is what both the CTS sheet
+and this footprint's own F.Fab already use, and that split makes the stated 3.5 come out right.
+It also lands the plunger tip at exactly the +2.0 mm the F.Fab actuator was drawn to, which is a
+pleasing agreement but not independent evidence — both trace to the same reading. **The plunger's
+reach is therefore the one figure to caliper before cutting a hole in the housing wall**, since
+an overstated reach is the dangerous direction: it would have you site the hole for a button that
+then sits recessed and cannot be pressed.
+
+One deliberate mismatch: the model's body is **7.0 mm** wide where the F.Fab outline is 6.9. The
+6.9 comes from the CTS sheet, the 7.0 from the drawing for the part actually being fitted, and
+the model takes the larger figure because for clearance work the generous number is the safe one.
+
+`check_3d.py` grew two conveniences while verifying this. It now takes a **name filter**, because
+the whole library rendered in a row leaves each part far too small to judge, and it **wraps
+whatever it places in an `Edge.Cuts` outline** — without one KiCad renders a board it cannot
+frame, and the camera points at empty space instead of at the part. The renders confirm what they
+need to: the body sits *on* the board rather than buried in it, it is centred on its own pads, and
+the plunger points at footprint **+Y**, which is the direction the F.Fab arrow claims. That Y
+question is not a formality — the model frame negates Y relative to the footprint, and getting it
+wrong is what buried the vendor STEP models earlier.
+
+> **`J2` will never have a 3D model, and that is the correct outcome, not an omission.** It is a
+> bare wire soldered through a hole: there is no body to draw, nothing for an enclosure to
+> collide with, and empty space is the honest representation. It is recorded that way in
+> `check_models.py`'s `WAIVED` table, with the reason attached, so the report separates it from
+> the parts that genuinely still need drawing instead of nagging about it forever. The tool now
+> reads *"32/36 parts have a 3D model, 1 need none, 3 still to draw."*
 
 > **`L1` has an orientation and it is not cosmetic.** The datasheet marks one terminal as the
 > start (short) lead and asks for **the high dv/dt node there for lowest EMI**. That is pin 1
@@ -812,8 +876,8 @@ constant is not a coincidence, so the two inferred numbers are now much safer th
 Caliper them anyway when the parts land.
 
 Geometry verifies on the same terms as the 2-way: silkscreen-to-pad and pad-to-pad both 0.200 mm
-or better, courtyard enclosing copper and body, `fp upgrade` idempotent. **No 3D model**, which
-makes three in the library without one.
+or better, courtyard enclosing copper and body, `fp upgrade` idempotent. **No 3D model**; with
+`SW1` since drawn, the two connectors are the only ones still missing theirs.
 
 With that, **`check_libs` reports zero pending**: every symbol and footprint in the design now
 resolves from either this repository or a stock KiCad install. There are no empty footprints left.
