@@ -707,9 +707,10 @@ renders the whole library on a scratch board so this is a look rather than a gue
 whenever a footprint gains a model.** A correct one sits *on* the board in the side view and
 *centred* on its pads from the top.
 
-**Three parts render as empty space, out of 36** (`check_models.py`, 16 Aug 2026) — it was four
-until `SW1` was drawn, below. The two left are ours: `J3` and `J1`, the 2- and 3-way connectors.
-The other is not ours at all: `J2`'s stock `Connector_Wire:SolderWire-…` footprint names
+**One part renders as empty space, out of 36** (`check_models.py`, 16 Aug 2026) — it was four
+before `SW1` and `J1` were drawn, below. The one left is `J3`, the 2-way connector, and it is a
+re-run of a script away. A second is not a gap at all: `J2`'s stock
+`Connector_Wire:SolderWire-…` footprint names
 `Connector_Wire.3dshapes/…`, and **that model package is absent from the install entirely** —
 the directory does not exist and no `SolderWire` model is anywhere under `3dmodels`, yet 324 of
 the 330 footprints in that library reference one. So it is an upstream gap, not a local
@@ -721,6 +722,36 @@ the housing wall and protrude far enough to be pressed. That is precisely the ki
 view catches and a schematic never will. The two connectors matter second, and for a different
 reason — both are **top-entry**, so what needs checking is not the body footprint but the
 headroom above it for the plug and the fingers inserting it.
+
+### Drawing `J1`, and the height nobody had looked up
+
+`pcb/tools/model_jst125.py` builds it, and **takes the pin count as an argument** so the same
+script covers `J3`: the two parts differ only in that one number, since the vendor table is
+generated from pin span A = (N−1) × 1.25 with body C = A + 1.95 and overall B = A + 3.00.
+
+Drawing it turned up **the one dimension the land pattern never needed and nobody had looked up:
+these headers stand 4.75 mm tall.** That is off the front elevation on page 2 of the vendor sheet,
+and it matters more than the body outline ever did, because a top-entry connector's clearance
+problem is vertical. The plug comes down from above, the mating crimp housing on page 1 is
+**4.0 mm** tall in its own right, and fingers or pliers need room above that again. So the real
+constraint at `J1` and `J3` is not the 5.5 × 3.7 mm of board they occupy — it is that **nothing
+can sit over them**, and the enclosure needs the lid clear of roughly 10 mm above these two spots
+rather than the 4.75 the part measures.
+
+The same sheet also **confirmed the 3.70 mm depth** already in the F.Fab outlines, which was
+reassuring: that figure had been carried from the CTS-style reasoning rather than read off this
+drawing, and it agrees.
+
+> **The sheet's letters contradict its own table, so read it carefully.** In the plan view the
+> *wider* span is labelled A and the narrower C, while the table has A as its *smallest* column.
+> The table is the one to trust, and the physical proportions settle it: on a 3-way part
+> C = 4.45 mm is the only one of the three figures that can be the plastic body. This is the same
+> jumbling already noted when the land pattern was derived — the drawing and the table were
+> evidently lettered by different hands.
+
+Two cavity dimensions are inferred rather than dimensioned — the 0.40 mm wall and the 1.10 mm
+cavity floor — but neither affects fit or clearance, only how convincing the part looks in the
+3D view.
 
 ### Drawing `SW1`'s model
 

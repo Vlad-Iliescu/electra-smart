@@ -3,7 +3,7 @@
 	(generator "pcbnew")
 	(generator_version "10.0")
 	(layer "F.Cu")
-	(descr "3-way 1.25 mm vertical (top-entry) SMD wire-to-board header with two anchor pads. Same unbranded part family as the 1x02 in this library, from the same vendor drawing in docs/datasheets/JST 1.25.pdf - read that footprint's description first, because it carries the full reasoning and the warning that this is NOT JST GH and must never be given a GH footprint. Row N=3 of the vendor table gives pin span A = 2.50 mm, overall width B = 5.50 mm and plastic body C = 4.45 mm. Land pattern: three signal pads 0.50 x 1.60 mm on the 1.25 mm pitch at x = -1.25 / 0 / +1.25, and two 2.00 x 3.00 mm anchor pads centred at x = +/-2.225 on the far side of the part, separated from the signal row by a 0.60 mm gap, all datumed on the origin so the signal row sits at y = +1.80 and the anchors at y = -1.10. The geometry scales from the 1x02 exactly as it should, which is the strongest evidence yet that the reading of the vendor's A/B/C columns is right: the anchor centres again fall precisely on the plastic body edges (C/2 = 2.225), and the anchor pads again finish 0.475 mm proud of the part's overall width (3.225 against B/2 = 2.75), the same overhang the 2-way part has. Two figures remain reasoned rather than stated, identically to the 1x02 - that C is the body and that the sheet's lone 0.60 is the band gap - so confirm the anchor-tab centre span reads 3.20 mm on the 2-way part and 4.45 mm here, and the clear gap to the pin row 0.60 mm, before committing to fab. F.Fab is the 5.50 x 3.70 mm overall envelope because the tab outline is not dimensioned; the two inner vertical lines mark x = +/-2.225 where the plastic ends and the tabs begin. This is J1, the intercom tap for +U / CD / GND, so it carries the raw 13.5 V line: the pads are on a 1.25 mm pitch with roughly 0.75 mm of copper gap between them, which is ample for 13.5 V in a dry indoor enclosure but is the reason to keep conformal coating or potting off the mating face and to seat the plug fully. No 3D model yet.")
+	(descr "3-way 1.25 mm vertical (top-entry) SMD wire-to-board header with two anchor pads. Same unbranded part family as the 1x02 in this library, from the same vendor drawing in docs/datasheets/JST 1.25.pdf - read that footprint's description first, because it carries the full reasoning and the warning that this is NOT JST GH and must never be given a GH footprint. Row N=3 of the vendor table gives pin span A = 2.50 mm, overall width B = 5.50 mm and plastic body C = 4.45 mm. Land pattern: three signal pads 0.50 x 1.60 mm on the 1.25 mm pitch at x = -1.25 / 0 / +1.25, and two 2.00 x 3.00 mm anchor pads centred at x = +/-2.225 on the far side of the part, separated from the signal row by a 0.60 mm gap, all datumed on the origin so the signal row sits at y = +1.80 and the anchors at y = -1.10. The geometry scales from the 1x02 exactly as it should, which is the strongest evidence yet that the reading of the vendor's A/B/C columns is right: the anchor centres again fall precisely on the plastic body edges (C/2 = 2.225), and the anchor pads again finish 0.475 mm proud of the part's overall width (3.225 against B/2 = 2.75), the same overhang the 2-way part has. Two figures remain reasoned rather than stated, identically to the 1x02 - that C is the body and that the sheet's lone 0.60 is the band gap - so confirm the anchor-tab centre span reads 3.20 mm on the 2-way part and 4.45 mm here, and the clear gap to the pin row 0.60 mm, before committing to fab. F.Fab is the 5.50 x 3.70 mm overall envelope because the tab outline is not dimensioned; the two inner vertical lines mark x = +/-2.225 where the plastic ends and the tabs begin. This is J1, the intercom tap for +U / CD / GND, so it carries the raw 13.5 V line: the pads are on a 1.25 mm pitch with roughly 0.75 mm of copper gap between them, which is ample for 13.5 V in a dry indoor enclosure but is the reason to keep conformal coating or potting off the mating face and to seat the plug fully. The 3D model is built by pcb/tools/model_jst125.py, which takes the pin count as an argument and covers the 1x02 as well; it is drawn rather than downloaded because no vendor supplies a model for an unbranded kit part. Its one important number is the height, 4.75 mm off the sheet's front elevation, which the land pattern never needed: this is top-entry, so the clearance question is the headroom above the board for the plug coming down, not the body itself.")
 	(tags "connector jst 1.25 micro sh-style smd vertical wire-to-board")
 	(property "Reference" "REF**"
 		(at 0 -3.6 0)
@@ -238,4 +238,15 @@
 		(uuid "118899aa-bbcc-41dd-82ee-dff0011223f9")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/../libs/electra.3dshapes/Conn_MicroJST1.25-SHstyle_1x03-1MP_P1.25mm_Vertical_SMD.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )
