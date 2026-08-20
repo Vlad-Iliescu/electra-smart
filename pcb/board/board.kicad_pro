@@ -50,10 +50,10 @@
         "silk_text_thickness": 0.1,
         "silk_text_upright": false,
         "zones": {
-          "border_display_style": 2,
+          "border_display_style": 1,
           "border_hatch_pitch": 0.5,
-          "corner_radius": 0.0,
-          "corner_smoothing": 0,
+          "corner_radius": 1.0,
+          "corner_smoothing": 2,
           "fill_mode": 0,
           "hatch_gap": 1.5,
           "hatch_orientation": 0.0,
@@ -63,14 +63,27 @@
           "min_clearance": 0.5,
           "min_island_area": 10.0,
           "min_thickness": 0.25,
-          "pad_connection": 1,
+          "pad_connection": 2,
           "remove_islands": 0,
           "thermal_relief_gap": 0.5,
           "thermal_relief_spoke_width": 0.5
         }
       },
       "diff_pair_dimensions": [],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        [
+          "hole_clearance|102722800|69931800|effbb60f-8ddd-498d-a56c-d206442e8b62|3cb805d6-629d-45e7-aaa4-aa159de1743b",
+          "part design"
+        ],
+        [
+          "hole_clearance|102722800|73231800|8420242e-58a9-48ad-b1cd-0a76197bef36|55694f77-b996-48da-8ff1-98d095ea23e1",
+          "part design"
+        ],
+        [
+          "silk_over_copper|99190983|38842500|651115be-877d-4804-8d94-917683170708|92acbfa8-4a2b-4aae-90cd-e7cac83204bc",
+          "part design"
+        ]
+      ],
       "meta": {
         "version": 2
       },
