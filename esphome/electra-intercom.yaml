@@ -25,6 +25,9 @@ substitutions:
   pin_can_tx: GPIO21
   pin_speaker_relay: GPIO6
   pin_status_led: GPIO7
+  # SW1 on the PCB, active low against R11's 10k pull-up. GPIO10 has no strapping
+  # role on the C3, so holding it at power-up is harmless.
+  pin_mode_button: GPIO10
 
 esphome:
   name: ${device_name}
@@ -176,6 +179,38 @@ binary_sensor:
     name: Call audio active
     entity_category: diagnostic
     lambda: return id(electra_bus).audio_session_active();
+
+  # The mode button steps through: off -> Silent -> Auto-open -> both -> off.
+  # It drives the same template switches HA does, so the LED update and the
+  # pending-auto-open cancellation ride along on their on_turn_* hooks.
+  # The internal pull-up is redundant with R11 on the PCB but keeps the pin
+  # defined on a hand-wired bench node where R11 does not exist.
+  - platform: gpio
+    id: mode_button
+    internal: true
+    pin:
+      number: ${pin_mode_button}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      # C9 takes the contact bounce; this only spans what slips past it.
+      - delayed_on: 20ms
+      - delayed_off: 20ms
+    on_press:
+      - lambda: |-
+          const bool s = id(silent).state;
+          const bool a = id(auto_open).state;
+          if (!s && !a) {
+            id(silent).turn_on();                          // -> Silent
+          } else if (s && !a) {
+            id(silent).turn_off(); id(auto_open).turn_on(); // -> Auto-open
+          } else if (!s && a) {
+            id(silent).turn_on();                          // -> both
+          } else {
+            id(silent).turn_off(); id(auto_open).turn_off(); // -> off
+          }
 
 button:
   - platform: template
