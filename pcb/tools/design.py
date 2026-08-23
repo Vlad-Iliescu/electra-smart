@@ -190,16 +190,20 @@ NETS = {
     # Speaker path. Both relay poles are paralleled: de-energised the speaker
     # is connected (fail-safe), and two contacts in parallel lower contact
     # resistance and add redundancy on a low-level audio signal.
-    # NC vs NO must be confirmed with a meter on the actual relay before fab.
+    # Contact roles MEASURED on the actual part (23 Aug 2026), agreeing with the
+    # Omron drawing: COM = 3/6 (centre pins), NC = 2/7 (coil-end pins),
+    # NO = 4/5. The first revision had NC and NO swapped - an unpowered board
+    # would have muted the intercom - which is exactly what the pre-fab meter
+    # check exists to catch. Do not "tidy" this back to 4/5.
     'SPK_HOT': [('J2', '1', 'Pin_1'), ('K1', '3', None), ('K1', '6', None)],
-    'SPK_SW': [('K1', '4', None), ('K1', '5', None), ('J3', '1', 'Pin_1')],
+    'SPK_SW': [('K1', '2', None), ('K1', '7', None), ('J3', '1', 'Pin_1')],
     'SPK_RET': [('J2', '2', 'Pin_2'), ('J3', '2', 'Pin_2')],
 }
 
 # Pins deliberately left open.
 NO_CONNECT = (
     [('U3', p) for p in ('0', '1', '2', '3', '4', '5', '8', '9', '5V')]
-    + [('U2', '1'), ('LED1', '2'), ('K1', '2'), ('K1', '7')]
+    + [('U2', '1'), ('LED1', '2'), ('K1', '4'), ('K1', '5')]
 )
 
 PAPER = 'A3'

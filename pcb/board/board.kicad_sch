@@ -6522,43 +6522,43 @@
 	)
 	(wire
 		(pts
-			(xy 207.01 237.49) (xy 207.01 232.41)
+			(xy 201.93 237.49) (xy 201.93 232.41)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0e111ebe-9104-5ace-810c-5b21b05afbd2")
+		(uuid "15cb7ba4-8c43-5046-a1bf-c685bcf250be")
 	)
 	(label "SPK_SW"
-		(at 207.01 232.41 90)
+		(at 201.93 232.41 90)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "47ca5c45-ef88-52a6-99d2-5b287f618295")
+		(uuid "81fda41e-ffeb-5428-8541-6ff9f0309900")
 	)
 	(wire
 		(pts
-			(xy 217.17 237.49) (xy 217.17 232.41)
+			(xy 212.09 237.49) (xy 212.09 232.41)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "b1a60df5-3870-5525-b6b0-5c87ff7f24f7")
+		(uuid "19befc88-02f7-5786-9040-d5b19ec7b926")
 	)
 	(label "SPK_SW"
-		(at 217.17 232.41 90)
+		(at 212.09 232.41 90)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "12f55200-0546-5d64-a2b5-95e6527ff479")
+		(uuid "c4cb2143-81ae-5ecc-a8de-0628d448d160")
 	)
 	(wire
 		(pts
@@ -6665,12 +6665,12 @@
 		(uuid "532271ec-dc09-5639-bd39-d754b26ac87e")
 	)
 	(no_connect
-		(at 201.93 237.49)
-		(uuid "d83121e3-ace6-5667-8668-17cc6a2f95b3")
+		(at 207.01 237.49)
+		(uuid "390a721b-e173-5125-b4fa-8b3a3d75ac5d")
 	)
 	(no_connect
-		(at 212.09 237.49)
-		(uuid "6c879ca7-2e97-54e4-aa4c-c165c9fba3bf")
+		(at 217.17 237.49)
+		(uuid "20f113e9-9973-5132-87fa-45a70c7b65fe")
 	)
 	(symbol
 		(lib_id "Connector:Conn_01x03_Socket")

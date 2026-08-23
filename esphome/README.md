@@ -21,6 +21,11 @@ for seconds at a time.
 | Bus idle / Call audio active | binary sensors | diagnostics |
 | Frames received / sent / failures / bus errors | sensors | diagnostics |
 
+The physical mode button (`SW1`) is deliberately **not** an entity: each press cycles
+off → Silent → Auto-open → both → off by driving the same two template switches HA
+uses, so HA's toggles, the LED and the pending-auto-open cancellation all stay in sync
+regardless of which side made the change.
+
 ## Why a custom `electra_can` component
 
 The stock `esp32_can` platform cannot do this job:
@@ -76,6 +81,7 @@ firmware itself depends on.
 | CAN TX | 21 | into the open-drain buffer |
 | Speaker relay | 6 | via a BCW65A NPN; **12 V coil on `+U` through 150 R**, not on a 5 V rail |
 | `WS2812B` status LED | 7 | 330 ohm in series on data. **Must be a `WS2812B`** (3.3-5.5 V), not an `SK6812` (3.5/3.7 V) - see `docs/wiring.md` |
+| Mode button | 10 | `SW1`, active low: 10 k pull-up (`R11`) + 100 nF (`C9`) on the PCB. No strapping role on the C3, and the firmware also enables the internal pull-up so a bench node without `R11` reads idle |
 
 GPIO11-17 are the SPI flash and GPIO18/19 are the native USB, so they are
 unavailable. GPIO2/8/9 are strapping pins and are best left alone.
@@ -210,7 +216,8 @@ over native USB (`hardware_uart: USB_SERIAL_JTAG`). After the first flash,
 everything is OTA — the router is a few metres away with line of sight.
 
 Verified to compile clean on ESPHome 2026.7.4 / ESP-IDF 5.5.5: no warnings,
-RAM 33.7%, flash 53.8%.
+RAM 33.7%, flash 53.9%. That build includes the mode button; before it the
+flash figure was 53.8%, so the button cost 0.1%.
 
 ### Two Windows-only build snags
 

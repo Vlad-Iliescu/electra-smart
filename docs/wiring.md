@@ -1009,21 +1009,26 @@ non-standard spelling.
 > to the copper. CTS orders actuator length as a variable, so the exact protrusion depends
 > on which part arrives.
 
-It has **no 3D model**, the only footprint in the library without one, so it renders as a
-bare outline. Nothing depends on it except enclosure clearance, which is exactly the check
-this part will eventually need — so it is worth adding once a STEP is to hand.
+It has a **3D model built from its dimensions** rather than a vendor STEP — see the 3D-model
+section, which also records the one figure (plunger reach) still to caliper.
 
-### Confirm the relay contacts with a meter before ordering a board
+### The relay contacts, measured — and the schematic was wrong
 
-`design.py` wires the speaker through `K1` pins **3-4** and **6-5**, taking 3 and 6 as the
-commons and 4 and 5 as the normally-closed contacts. The KiCad symbol's geometry supports
-that reading, but the Omron datasheet gives the terminal arrangement only as an image, and
-web sources contradict each other on which contact is NC.
+**Resolved 23 Aug 2026, on the physical part.** With the coil unpowered the meter reads
+continuity on **2-3 and 6-7**, and the Omron drawing agrees: **COM = 3/6 (centre pins),
+NC = 2/7 (coil-end pins), NO = 4/5.**
 
-**This is the fail-safe, so verify it rather than trusting the schematic:** with the coil
-unpowered, check continuity from 3 to 4 and from 6 to 5. Both should read closed. If instead
-3-2 and 6-7 are closed, swap the `SPK_SW` net onto pins 2 and 7 in `design.py` and
-regenerate. De-energised **must** mean speaker connected.
+The first revision of `design.py` had wired the speaker through 3-4 and 6-5 — through the
+**normally-open** contacts. An unpowered or crashed board would have muted the intercom
+permanently, the exact inversion of the fail-safe this design promises, and it would have
+been discovered only after fab. The earlier text here said the KiCad symbol's geometry
+supported the 4/5-as-NC reading; it did, and it was wrong, which is why this check was
+gated on a meter rather than on anyone's reading of a drawing.
+
+The fix is in: `SPK_SW` moved to pins 2/7 in `design.py`, pins 4/5 to the no-connect list,
+the PCB rerouted through the coil-end row, and the gerbers regenerated — the zip dated
+**2026-08-23-relayfix** is the only one to upload; the 2026-08-20 zip was destroyed.
+De-energised now genuinely means speaker connected.
 
 Both poles are wired in parallel on purpose — it halves contact resistance and adds
 redundancy on a low-level audio signal. The trade is deliberate: a contact that fails to
