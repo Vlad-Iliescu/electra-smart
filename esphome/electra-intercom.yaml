@@ -111,15 +111,21 @@ canbus:
                 return;
               }
 
-              if (can_id == ${terminal_addr} && from == 0x04) {
+              // The CAN id is the channel of the terminal an event belongs to, so
+              // only our own id may drive our entities. 0x000 is the system channel.
+              const bool ours = (can_id == ${terminal_addr});
+
+              if (ours && from == 0x04) {
                 if (cmd == 0x03) {                       // the panel is calling us
                   ESP_LOGI("electra", "ring");
                   id(ring).publish_state(true);
+                  id(ring_backstop).execute();
                   if (id(silent).state) {
                     id(speaker_cut).turn_on();
                   }
                 } else if (cmd == 0x04) {                // call ended or timed out
                   ESP_LOGI("electra", "call ended");
+                  id(ring_backstop).stop();
                   id(ring).publish_state(false);
                   id(speaker_cut).turn_off();
                 }
@@ -127,19 +133,31 @@ canbus:
 
               // An answer (0x05) or an open (0x07) is followed by an audio session,
               // announced as 0x000 / 00 02. Restoring the speaker on any of them
-              // means a silenced call is still audible if it is picked up.
+              // means a silenced call is still audible if it is picked up. Erring
+              // towards an audible speaker is the safe direction, so unlike the
+              // rest this is deliberately not gated to our own channel.
               if (cmd == 0x05 || cmd == 0x07 || (can_id == 0x000 && from == 0x00 && cmd == 0x02)) {
                 id(speaker_cut).turn_off();
               }
 
-              if (cmd == 0x07) {
+              if (ours && cmd == 0x07) {
                 ESP_LOGI("electra", "door opened");
+                id(ring_backstop).stop();
                 id(ring).publish_state(false);
               }
 
-              // Monitoring: 0x0DF 02 08 00 starts it, 0x000 00 08 02 ends it.
+              // Monitoring starts on the channel of whoever started it (0x0DF
+              // 02 08 00) and ends with a system frame that carries no address
+              // (0x000 00 08 02). Only our own channel may raise it; the
+              // unaddressed end frame clears whatever was running.
               if (cmd == 0x08) {
-                id(monitoring).publish_state(from != 0x00);
+                if (ours && from != 0x00) {
+                  id(monitoring).publish_state(true);
+                  id(monitoring_backstop).execute();
+                } else if (can_id == 0x000 && from == 0x00) {
+                  id(monitoring_backstop).stop();
+                  id(monitoring).publish_state(false);
+                }
               }
 
 # ---------------------------------------------------------------------------
@@ -151,10 +169,8 @@ binary_sensor:
     name: Ring
     id: ring
     device_class: occupancy
-    # The call-end frame clears this, so the timeout is only a backstop for a
-    # frame we might have missed. The measured call window is 59.7 s.
-    filters:
-      - delayed_off: 70s
+    # Cleared by the explicit call-end or open frame. ring_backstop covers the
+    # case where we never see one.
     on_press:
       - if:
           condition:
@@ -166,9 +182,7 @@ binary_sensor:
     name: Monitoring
     id: monitoring
     device_class: running
-    # The measured monitoring session is 8.55 s and its end frame is explicit.
-    filters:
-      - delayed_off: 12s
+    # Cleared by the explicit end frame; monitoring_backstop is the fallback.
 
   - platform: template
     name: Bus idle
@@ -334,6 +348,29 @@ script:
           canbus_id: electra_bus
           can_id: ${terminal_addr}
           data: [0x02, 0x07, 0x01, 0x00]
+
+  # Backstops for a clearing frame we never saw. These were delayed_off filters,
+  # but that filter defers every false it is handed, including the explicit
+  # call-end and monitoring-end frames, so both sensors stayed on for the whole
+  # window after the event was already over. A cancellable timer keeps the
+  # explicit clears instant and still covers a missed frame.
+  - id: ring_backstop
+    mode: restart
+    then:
+      # The measured call window is 59.7 s.
+      - delay: 70s
+      - lambda: |-
+          ESP_LOGW("electra", "no call-end frame within 70 s, clearing ring");
+          id(ring).publish_state(false);
+
+  - id: monitoring_backstop
+    mode: restart
+    then:
+      # The measured monitoring session is 8.55 s.
+      - delay: 12s
+      - lambda: |-
+          ESP_LOGW("electra", "no monitoring-end frame within 12 s, clearing");
+          id(monitoring).publish_state(false);
 
   - id: auto_open_pending
     mode: restart
