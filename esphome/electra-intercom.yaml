@@ -233,6 +233,16 @@ button:
     on_press:
       - script.execute: do_open
 
+  # Bring-up aid: proves whether our transmit path can pull the line dominant,
+  # which is what a frame that is never acknowledged points at. Holds the line
+  # dominant for 20 ms, far less than a failed transmit already does.
+  - platform: template
+    name: TX path self-test
+    entity_category: diagnostic
+    icon: mdi:test-tube
+    on_press:
+      - lambda: id(electra_bus).tx_path_selftest();
+
 switch:
   # The relay coil. Wired through the normally-closed contact so that
   # de-energised means the speaker is connected: if this board loses power or
@@ -257,6 +267,20 @@ switch:
     on_turn_off:
       - switch.turn_off: speaker_cut
       - script.execute: update_status_led
+
+  # Bring-up diagnostic, off by default and not restored across reboots. See the
+  # comment on set_tx_no_ack in the component for what it separates.
+  - platform: template
+    name: Transmit without ACK
+    id: tx_no_ack
+    entity_category: diagnostic
+    icon: mdi:help-network
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - lambda: id(electra_bus).set_tx_no_ack(true);
+    on_turn_off:
+      - lambda: id(electra_bus).set_tx_no_ack(false);
 
   - platform: template
     name: Auto-open on call

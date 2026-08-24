@@ -6,6 +6,8 @@
 
 #include <driver/gpio.h>
 #include <esp_err.h>
+#include <esp_rom_sys.h>
+#include <esp_timer.h>
 
 #include <algorithm>
 #include <cstring>
@@ -84,7 +86,9 @@ bool ElectraCan::restore_listen_only_() {
 
 bool ElectraCan::enter_normal_mode_() {
   this->uninstall_();
-  if (this->install_(TWAI_MODE_NORMAL))
+  if (this->tx_no_ack_)
+    ESP_LOGW(TAG, "transmitting in no-ack mode: the acknowledge slot is ignored (diagnostic)");
+  if (this->install_(this->tx_no_ack_ ? TWAI_MODE_NO_ACK : TWAI_MODE_NORMAL))
     return true;
   ESP_LOGW(TAG, "could not enter normal mode, dropping %u queued frame(s)",
            static_cast<unsigned>(this->tx_queue_.size()));
@@ -205,6 +209,12 @@ void ElectraCan::service_tx_() {
         } else {
           memcpy(message.data, frame.data, frame.can_data_length_code);
         }
+        // Self-test mode only waives the acknowledge for frames issued as a self
+        // reception request, so the flag has to travel with the message rather
+        // than being implied by the controller mode. The frame still goes out on
+        // the wire; we just also receive a copy of it.
+        if (this->tx_no_ack_)
+          message.flags |= TWAI_MSG_FLAG_SELF;
 
         const esp_err_t err = twai_transmit(&message, 0);
         if (err == ESP_OK) {
@@ -216,21 +226,33 @@ void ElectraCan::service_tx_() {
         }
         this->tx_queue_.pop_front();
       }
+      this->log_tx_status_("tx begin");
+      this->probe_tx_errors_(300000);
       this->tx_state_ = TX_SENDING;
-      this->tx_state_since_ = now;
+      this->tx_state_since_ = millis();
+      this->tx_last_probe_ = this->tx_state_since_;
       return;
     }
 
     case TX_SENDING: {
       twai_status_info_t status{};
       const bool drained = twai_get_status_info(&status) == ESP_OK && status.msgs_to_tx == 0;
-      if (!drained && (now - this->tx_state_since_) < this->tx_window_timeout_ms_)
+      if (!drained && (now - this->tx_state_since_) < this->tx_window_timeout_ms_) {
+        if (now - this->tx_last_probe_ >= 500) {
+          this->tx_last_probe_ = now;
+          this->log_tx_status_("tx pending");
+        }
         return;
+      }
       if (!drained) {
-        // Nothing acknowledged us, so the controller is still retrying. Dropping
-        // back to listen-only aborts it, which is the safe outcome.
-        ESP_LOGW(TAG, "transmission unacknowledged after %" PRIu32 " ms, aborting", this->tx_window_timeout_ms_);
+        // The controller never emptied its queue. Why is in the counters, not
+        // here. Dropping back to listen-only aborts the attempt, which is the
+        // safe outcome either way.
+        this->log_tx_status_("tx aborted");
+        ESP_LOGW(TAG, "frame not sent within %" PRIu32 " ms, aborting", this->tx_window_timeout_ms_);
         this->tx_failure_count_++;
+      } else {
+        this->log_tx_status_("tx done");
       }
       this->restore_listen_only_();
       this->tx_state_ = TX_IDLE;
@@ -239,11 +261,138 @@ void ElectraCan::service_tx_() {
   }
 }
 
+void ElectraCan::probe_tx_errors_(uint32_t window_us) {
+  static constexpr size_t MAX_MARKS = 12;
+  // One bit at the bus rate, used to express the gaps in something meaningful.
+  const uint32_t bit_us = this->nominal_bit_rate_ == 0 ? 88 : 1000000UL / this->nominal_bit_rate_;
+
+  int64_t at[MAX_MARKS];
+  uint32_t count[MAX_MARKS];
+  size_t n = 0;
+
+  twai_status_info_t s{};
+  uint32_t last = 0;
+  if (twai_get_status_info(&s) == ESP_OK)
+    last = s.bus_error_count;
+
+  const int64_t start = esp_timer_get_time();
+  while (n < MAX_MARKS && (esp_timer_get_time() - start) < (int64_t) window_us) {
+    if (twai_get_status_info(&s) != ESP_OK)
+      break;
+    if (s.bus_error_count != last) {
+      at[n] = esp_timer_get_time() - start;
+      count[n] = s.bus_error_count;
+      last = s.bus_error_count;
+      n++;
+    }
+    if (s.msgs_to_tx == 0)
+      break;
+  }
+
+  if (n == 0) {
+    ESP_LOGW(TAG, "tx probe: no errors in the first %" PRIu32 " us", window_us);
+    return;
+  }
+  for (size_t i = 0; i < n; i++) {
+    const int64_t gap = i == 0 ? at[0] : at[i] - at[i - 1];
+    ESP_LOGW(TAG, "tx probe: bus_err=%" PRIu32 " at %lld us, %lld us since previous (%lld bit times)", count[i],
+             (long long) at[i], (long long) gap, (long long) (gap / bit_us));
+  }
+}
+
+void ElectraCan::log_tx_status_(const char *phase) {
+  twai_status_info_t s{};
+  if (twai_get_status_info(&s) != ESP_OK) {
+    ESP_LOGW(TAG, "%s: controller status unavailable", phase);
+    return;
+  }
+  const char *state = "?";
+  switch (s.state) {
+    case TWAI_STATE_STOPPED:
+      state = "stopped";
+      break;
+    case TWAI_STATE_RUNNING:
+      state = "running";
+      break;
+    case TWAI_STATE_BUS_OFF:
+      state = "bus-off";
+      break;
+    case TWAI_STATE_RECOVERING:
+      state = "recovering";
+      break;
+  }
+  ESP_LOGW(TAG,
+           "%s: state=%s tx_queued=%" PRIu32 " tec=%" PRIu32 " rec=%" PRIu32 " tx_failed=%" PRIu32
+           " arb_lost=%" PRIu32 " bus_err=%" PRIu32,
+           phase, state, s.msgs_to_tx, s.tx_error_counter, s.rx_error_counter, s.tx_failed_count, s.arb_lost_count,
+           s.bus_error_count);
+}
+
 uint32_t ElectraCan::get_bus_error_count() const {
   twai_status_info_t status{};
   if (!this->installed_ || twai_get_status_info(&status) != ESP_OK)
     return 0;
   return status.bus_error_count;
+}
+
+void ElectraCan::tx_path_selftest(uint32_t assert_ms) {
+  // A dominant line would make every reading below meaningless, and this must
+  // not step on a call in progress.
+  if (!this->bus_is_idle()) {
+    ESP_LOGW(TAG, "TX self-test skipped: line is not idle");
+    return;
+  }
+
+  this->uninstall_();
+
+  // Take both pins back from the TWAI matrix. The transmit pin is parked high
+  // before its driver is enabled, so handing it over cannot glitch the line
+  // dominant. High is recessive: the 74LVC1G07 is a non-inverting open-drain
+  // buffer, so a high input leaves its output floating.
+  gpio_reset_pin((gpio_num_t) this->tx_);
+  gpio_set_level((gpio_num_t) this->tx_, 1);
+  gpio_set_direction((gpio_num_t) this->tx_, GPIO_MODE_OUTPUT);
+  gpio_set_level((gpio_num_t) this->tx_, 1);
+
+  gpio_reset_pin((gpio_num_t) this->rx_);
+  gpio_set_direction((gpio_num_t) this->rx_, GPIO_MODE_INPUT);
+  // No internal pull, so the reading is the bus and not our own pin.
+  gpio_set_pull_mode((gpio_num_t) this->rx_, GPIO_FLOATING);
+
+  esp_rom_delay_us(200);
+  const int idle_level = gpio_get_level((gpio_num_t) this->rx_);
+
+  // Pull the buffer input low, which should sink the line through the 47R.
+  gpio_set_level((gpio_num_t) this->tx_, 0);
+  uint32_t dominant_samples = 0;
+  const uint32_t samples = assert_ms == 0 ? 1 : assert_ms;
+  for (uint32_t i = 0; i < samples; i++) {
+    esp_rom_delay_us(1000);
+    if (gpio_get_level((gpio_num_t) this->rx_) == 0)
+      dominant_samples++;
+  }
+
+  gpio_set_level((gpio_num_t) this->tx_, 1);
+  esp_rom_delay_us(200);
+  const int released_level = gpio_get_level((gpio_num_t) this->rx_);
+
+  const bool asserted_ok = dominant_samples == samples;
+  const bool released_ok = idle_level == 1 && released_level == 1;
+
+  if (asserted_ok && released_ok) {
+    ESP_LOGW(TAG, "TX self-test PASS: line went dominant on all %" PRIu32 " samples and returned recessive",
+             samples);
+  } else if (!released_ok) {
+    ESP_LOGE(TAG, "TX self-test INVALID: line read %d idle and %d after release, expected recessive both times",
+             idle_level, released_level);
+  } else {
+    ESP_LOGE(TAG,
+             "TX self-test FAIL: line stayed recessive for %" PRIu32 " of %" PRIu32
+             " samples while driven - the transmit path is not reaching the bus",
+             samples - dominant_samples, samples);
+  }
+
+  this->restore_listen_only_();
 }
 
 void ElectraCan::dump_config() {

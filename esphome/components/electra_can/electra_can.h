@@ -53,6 +53,35 @@ class ElectraCan final : public canbus::Canbus {
   uint32_t get_tx_failure_count() const { return this->tx_failure_count_; }
   uint32_t get_bus_error_count() const;
 
+  /* Drives the transmit path by hand and watches the receive pin to see whether
+   * the line actually moved.
+   *
+   * The controller reports our door frame as never acknowledged, which in CAN
+   * can only mean no other node received it intact. That points below the
+   * protocol, at whether our dominant bits reach the line at all - something no
+   * amount of listening can answer, because receive uses a different path.
+   *
+   * So this drops the TWAI driver, drives the transmit pin low as plain GPIO,
+   * and samples the receive pin. Both sit on the same wire, so a working path
+   * has to read back dominant. If it stays recessive, the fault is in the
+   * buffer, its supply, the series resistor or a joint, not in the firmware.
+   */
+  void tx_path_selftest(uint32_t assert_ms = 20);
+
+  /* Diagnostic: transmit with the acknowledge slot ignored.
+   *
+   * Our door frame goes out complete and then fails at the end of the frame,
+   * every ~94 bit times. Two things look identical from the error counters: no
+   * node acknowledging us, and a node that hears us but rejects the frame and
+   * answers with an error flag. Ignoring the acknowledge separates them - the
+   * first case starts succeeding, the second keeps failing the same way.
+   *
+   * This is not a fix to leave on: it also stops us acknowledging frames we
+   * receive, and it throws away all delivery confirmation.
+   */
+  void set_tx_no_ack(bool no_ack) { this->tx_no_ack_ = no_ack; }
+  bool get_tx_no_ack() const { return this->tx_no_ack_; }
+
  protected:
   bool setup_internal() override;
   canbus::Error send_message(canbus::CanFrame *frame) override;
@@ -64,6 +93,23 @@ class ElectraCan final : public canbus::Canbus {
   bool enter_normal_mode_();
   void sample_line_();
   void service_tx_();
+  /* Dumps the controller's own account of a transmit attempt.
+   *
+   * A queue that will not drain says nothing about why. The error counters do:
+   * a rising transmit error counter means the frame is going out and failing,
+   * arb_lost means we keep yielding to another node, bus-off means we already
+   * gave up, and everything flat means the controller never started at all.
+   */
+  void log_tx_status_(const char *phase);
+  /* Times the individual failures inside one transmit attempt.
+   *
+   * An unanswered acknowledge slot and a bit error at the very start of the
+   * frame both cost the same 8 error-counter points, so the counters alone
+   * cannot tell them apart. The spacing can: reaching the acknowledge slot
+   * means a whole frame went out first, around 90 bit times, while dying at the
+   * start costs closer to 18. This busy-waits, so it is a bring-up aid.
+   */
+  void probe_tx_errors_(uint32_t window_us);
 
   enum TxState : uint8_t {
     TX_IDLE = 0,
@@ -82,6 +128,7 @@ class ElectraCan final : public canbus::Canbus {
   twai_timing_config_t timing_{};
 
   bool installed_{false};
+  bool tx_no_ack_{false};
   twai_mode_t mode_{TWAI_MODE_LISTEN_ONLY};
 
   bool line_recessive_{false};
@@ -90,6 +137,7 @@ class ElectraCan final : public canbus::Canbus {
 
   TxState tx_state_{TX_IDLE};
   uint32_t tx_state_since_{0};
+  uint32_t tx_last_probe_{0};
   std::deque<canbus::CanFrame> tx_queue_;
 
   uint32_t rx_count_{0};
