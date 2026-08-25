@@ -29,6 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 DEPENDENCIES = ["esp32"]
 
 CONF_IDLE_REQUIRED = "idle_required"
+CONF_PULLUP_PIN = "pullup_pin"
 CONF_RX_QUEUE_LEN = "rx_queue_len"
 CONF_TX_WINDOW_TIMEOUT = "tx_window_timeout"
 CONF_TIMING = "timing"
@@ -174,6 +175,9 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(): cv.declare_id(ElectraCan),
             cv.Required(CONF_RX_PIN): pins.internal_gpio_input_pin_number,
             cv.Required(CONF_TX_PIN): pins.internal_gpio_output_pin_number,
+            # Drives a resistor onto C/D to speed the return to recessive, and only
+            # while we transmit. See the header for why this is not just a pull-up.
+            cv.Optional(CONF_PULLUP_PIN): pins.internal_gpio_output_pin_number,
             cv.Optional(CONF_BIT_RATE, default=11364): validate_bit_rate,
             cv.Optional(CONF_TIMING): TIMING_SCHEMA,
             cv.Optional(
@@ -212,6 +216,8 @@ async def to_code(config):
     cg.add(var.set_nominal_bit_rate(config[CONF_BIT_RATE]))
     cg.add(var.set_rx_pin(config[CONF_RX_PIN]))
     cg.add(var.set_tx_pin(config[CONF_TX_PIN]))
+    if CONF_PULLUP_PIN in config:
+        cg.add(var.set_pullup_pin(config[CONF_PULLUP_PIN]))
     cg.add(var.set_rx_queue_len(config[CONF_RX_QUEUE_LEN]))
     cg.add(var.set_idle_required_ms(config[CONF_IDLE_REQUIRED].total_milliseconds))
     cg.add(

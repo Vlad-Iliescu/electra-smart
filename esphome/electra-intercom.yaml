@@ -23,6 +23,11 @@ substitutions:
   # GPIO2/8/9 are strapping pins and best left alone.
   pin_can_rx: GPIO20
   pin_can_tx: GPIO21
+  # Drives a 1k resistor onto C/D while transmitting, so the line returns to
+  # recessive fast enough for other nodes to read our bits. Measured: without it
+  # our dominant bits overrun their slot by ~40 us of an 88 us bit and every frame
+  # is rejected. High-Z at all other times - see the electra_can header.
+  pin_can_pullup: GPIO5
   pin_speaker_relay: GPIO6
   pin_status_led: GPIO7
   # SW1 on the PCB, active low against R11's 10k pull-up. GPIO10 has no strapping
@@ -81,6 +86,7 @@ canbus:
     can_id: ${terminal_addr}
     rx_pin: ${pin_can_rx}
     tx_pin: ${pin_can_tx}
+    pullup_pin: ${pin_can_pullup}
     # Solved into brp/tseg at compile time; the achieved rate is logged then and
     # printed again in the boot log.
     bit_rate: 11364

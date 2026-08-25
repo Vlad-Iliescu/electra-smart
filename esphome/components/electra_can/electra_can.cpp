@@ -37,6 +37,10 @@ void ElectraCan::set_timing(uint32_t brp, uint8_t tseg1, uint8_t tseg2, uint8_t 
 }
 
 bool ElectraCan::setup_internal() {
+  // Park the assist pin high-Z before anything else. It is wired to a shared bus
+  // through a resistor low enough to disturb it, so the pin must never be an
+  // output except during the few milliseconds a frame is going out.
+  this->tx_pullup_(false);
   if (!this->install_(TWAI_MODE_LISTEN_ONLY))
     return false;
   ESP_LOGI(TAG, "listening at %" PRIu32 " bps, listen-only until a frame is queued", this->nominal_bit_rate_);
@@ -97,6 +101,30 @@ bool ElectraCan::enter_normal_mode_() {
   this->tx_state_ = TX_IDLE;
   this->restore_listen_only_();
   return false;
+}
+
+void ElectraCan::tx_pullup_(bool on) {
+  if (this->pullup_ < 0)
+    return;
+  const gpio_num_t pin = (gpio_num_t) this->pullup_;
+
+  if (on) {
+    // Set the level before the direction, so becoming an output cannot flick the
+    // line dominant for a cycle.
+    gpio_set_level(pin, 1);
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+    return;
+  }
+
+  gpio_config_t cfg{};
+  cfg.pin_bit_mask = 1ULL << (uint32_t) this->pullup_;
+  cfg.mode = GPIO_MODE_INPUT;
+  // Not gpio_reset_pin(), which enables the internal pull-up: that would leave
+  // ~45 k to 3V3 sitting on the bus for good, too weak to help and not nothing.
+  cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+  cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  cfg.intr_type = GPIO_INTR_DISABLE;
+  gpio_config(&cfg);
 }
 
 void ElectraCan::sample_line_() {
@@ -194,8 +222,15 @@ void ElectraCan::service_tx_() {
       if (!this->bus_is_idle())
         return;
 
-      if (!this->enter_normal_mode_())
+      // The line has been recessive for the whole quiet window, so asserting the
+      // assist here holds it where it already is - it only starts mattering once
+      // the controller begins pulling bits dominant.
+      this->tx_pullup_(true);
+
+      if (!this->enter_normal_mode_()) {
+        this->tx_pullup_(false);
         return;
+      }
 
       while (!this->tx_queue_.empty()) {
         const canbus::CanFrame &frame = this->tx_queue_.front();
@@ -254,7 +289,10 @@ void ElectraCan::service_tx_() {
       } else {
         this->log_tx_status_("tx done");
       }
+      // Listen-only first: that stops the controller driving, so the assist stays
+      // up for as long as we could still be putting bits on the line.
       this->restore_listen_only_();
+      this->tx_pullup_(false);
       this->tx_state_ = TX_IDLE;
       return;
     }
@@ -399,6 +437,11 @@ void ElectraCan::dump_config() {
   ESP_LOGCONFIG(TAG, "Electra single-wire CAN:");
   ESP_LOGCONFIG(TAG, "  RX pin: GPIO%u", this->rx_);
   ESP_LOGCONFIG(TAG, "  TX pin: GPIO%u", this->tx_);
+  if (this->pullup_ < 0) {
+    ESP_LOGW(TAG, "  Recessive assist: none - transmitted frames will be rejected");
+  } else {
+    ESP_LOGCONFIG(TAG, "  Recessive assist pin: GPIO%d (driven only while transmitting)", this->pullup_);
+  }
   ESP_LOGCONFIG(TAG, "  Bit rate: %" PRIu32 " bps", this->nominal_bit_rate_);
   ESP_LOGCONFIG(TAG, "  Timing: brp=%" PRIu32 " tseg1=%u tseg2=%u sjw=%u triple_sampling=%s", this->timing_.brp,
                 this->timing_.tseg_1, this->timing_.tseg_2, this->timing_.sjw,

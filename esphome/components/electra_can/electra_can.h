@@ -33,6 +33,30 @@ class ElectraCan final : public canbus::Canbus {
  public:
   void set_rx_pin(uint8_t rx) { this->rx_ = rx; }
   void set_tx_pin(uint8_t tx) { this->tx_ = tx; }
+
+  /* Pin that drives a resistor onto C/D for the duration of a transmission.
+   *
+   * The transmit buffer is open-drain and the board has no pull-up on the bus
+   * side, so going dominant is fast but coming back recessive is left to the
+   * intercom's own weak pull-up. Measured on the bus, that takes about 40 us
+   * against an 88 us bit: every dominant bit we send overruns its slot by
+   * nearly half a bit, other nodes mis-sample the frame, and it is rejected at
+   * the end with an error flag. A 1 k resistor to 3V3 collapses the skew from
+   * +46% of a bit to +1.1%, which matches the terminal's own driver.
+   *
+   * Leaving that resistor permanently connected is not acceptable, for two
+   * reasons. It would put a 1 k path to a dead rail on a shared building bus if
+   * this board ever loses power, and it is strong enough to fight whatever holds
+   * the line dominant weakly - with it fitted, periodic bus events turned into
+   * bursts of ~58 kHz relaxation oscillation.
+   *
+   * So the resistor hangs off a plain GPIO that is driven high only while a
+   * frame is going out, and is an input at every other instant, including before
+   * setup() runs and while the board is dead. That is how a single-wire CAN
+   * transceiver behaves: recessive is driven, but only by the node that is
+   * talking, and weakly enough that any dominant still wins.
+   */
+  void set_pullup_pin(uint8_t pin) { this->pullup_ = (int16_t) pin; }
   void set_rx_queue_len(uint32_t len) { this->rx_queue_len_ = len; }
   void set_idle_required_ms(uint32_t ms) { this->idle_required_ms_ = ms; }
   void set_tx_window_timeout_ms(uint32_t ms) { this->tx_window_timeout_ms_ = ms; }
@@ -93,6 +117,8 @@ class ElectraCan final : public canbus::Canbus {
   bool enter_normal_mode_();
   void sample_line_();
   void service_tx_();
+  /// Drives the recessive-assist resistor, or leaves the pin high-Z when off.
+  void tx_pullup_(bool on);
   /* Dumps the controller's own account of a transmit attempt.
    *
    * A queue that will not drain says nothing about why. The error counters do:
@@ -121,6 +147,7 @@ class ElectraCan final : public canbus::Canbus {
 
   uint8_t rx_{0};
   uint8_t tx_{0};
+  int16_t pullup_{-1};  // negative means no recessive assist is fitted
   uint32_t rx_queue_len_{32};
   uint32_t idle_required_ms_{50};
   uint32_t tx_window_timeout_ms_{5000};
