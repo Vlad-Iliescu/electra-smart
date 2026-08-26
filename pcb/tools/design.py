@@ -74,6 +74,10 @@ PARTS = {
     'R5':  ('Device:R', '47R', R0603, 245, 180, 'right'),
     'R6':  ('Device:R', '1k', R0603, 270, 180, 'right'),
     'D3':  ('Diode:BAT54S', 'BAT54SLT1G', SOT23, 305, 180, 'top'),
+    # Recessive assist, see the CD_ASSIST net. Value set by the bus it drives:
+    # low enough that the line climbs in a few percent of a bit, high enough that
+    # any node's dominant still wins and costs it only ~3.3 mA to overrule.
+    'R12': ('Device:R', '1k', R0603, 335, 180, 'right'),
     # --- speaker-mute relay ----------------------------------------------
     'R7':  ('Device:R', '1k', R0603, 40, 245, 'right'),
     'R8':  ('Device:R', '10k', R0603, 65, 245, 'right'),
@@ -163,7 +167,27 @@ NETS = {
     'CAN_TX_OD': [('U2', '4', None), ('R5', '1', None)],
 
     # The intercom's single-wire CAN bus.
-    'CD': [('J1', '2', 'Pin_2'), ('R5', '2', None), ('R6', '1', None)],
+    'CD': [('J1', '2', 'Pin_2'), ('R5', '2', None), ('R6', '1', None),
+           ('R12', '2', None)],
+
+    # Recessive assist, and the reason transmitting did not work at all until it
+    # existed. U2 is open-drain, so it can only sink; nothing on this board pulled
+    # C/D back up, leaving that to the intercom's own pull-up. Measured, that is
+    # ~45 k against ~1.4 nF, so releasing the line takes ~44 us of an 88 us bit.
+    # Every dominant bit we sent overran its slot by half a bit, so other nodes
+    # mis-sampled the frame and answered with an error flag - which read as "never
+    # acknowledged" and drove us bus-off on all 32 retries.
+    #
+    # R12 pulls the line up hard, but only while a frame is going out. Driven
+    # permanently it would fight whatever holds the bus dominant weakly, measured
+    # as bursts of ~58 kHz relaxation oscillation, and it would leave a 1 k path
+    # to a dead rail on shared building wiring. GPIO5 is an input at every other
+    # instant, including before setup() runs and while the board is unpowered,
+    # which keeps the fail-safe the rest of this design is built around.
+    #
+    # This is how a single-wire CAN transceiver behaves: recessive is driven, but
+    # only by the node that is talking, and weakly enough that dominant wins.
+    'CD_ASSIST': [('U3', '5', 'GPIO5'), ('R12', '1', None)],
 
     # RX with a series resistor and a BAT54S clamping to the 3V3 rail / GND.
     'CAN_RX': [('R6', '2', None), ('U3', '20', 'GPIO20'), ('D3', '3', 'COM')],
@@ -202,7 +226,7 @@ NETS = {
 
 # Pins deliberately left open.
 NO_CONNECT = (
-    [('U3', p) for p in ('0', '1', '2', '3', '4', '5', '8', '9', '5V')]
+    [('U3', p) for p in ('0', '1', '2', '3', '4', '8', '9', '5V')]
     + [('U2', '1'), ('LED1', '2'), ('K1', '4'), ('K1', '5')]
 )
 

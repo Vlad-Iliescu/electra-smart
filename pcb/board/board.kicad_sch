@@ -6022,6 +6022,66 @@
 	)
 	(wire
 		(pts
+			(xy 335.28 184.15) (xy 335.28 189.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "29039235-a6b1-5a6a-b630-8428cc8150cb")
+	)
+	(label "CD"
+		(at 335.28 189.23 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d52b160d-b88c-5eeb-95f0-2eee3dd68def")
+	)
+	(wire
+		(pts
+			(xy 57.15 187.96) (xy 52.07 187.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f13357e6-3a3c-57d0-9755-4f9ddc33fa76")
+	)
+	(label "CD_ASSIST"
+		(at 52.07 187.96 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "fc4f57ad-464b-5510-9242-c4f894e7e73d")
+	)
+	(wire
+		(pts
+			(xy 335.28 176.53) (xy 335.28 171.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "94222171-3f08-594e-a140-a6751e34d31b")
+	)
+	(label "CD_ASSIST"
+		(at 335.28 171.45 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b7740f01-d0b4-5934-a6ba-6f23a047fc70")
+	)
+	(wire
+		(pts
 			(xy 270.51 184.15) (xy 270.51 189.23)
 		)
 		(stroke
@@ -6639,10 +6699,6 @@
 	(no_connect
 		(at 57.15 185.42)
 		(uuid "d487844a-5d83-5c21-8737-d5a40b0d7a72")
-	)
-	(no_connect
-		(at 57.15 187.96)
-		(uuid "354dd85c-687a-5154-b3a4-8eafaf705202")
 	)
 	(no_connect
 		(at 92.71 177.8)
@@ -8544,6 +8600,76 @@
 			(project "board"
 				(path "/280d216a-ac40-40e1-a29c-e0f755d20d03"
 					(reference "D3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 335.28 180.34 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "637449e8-500f-5eb4-8405-f9d3b1ad365b")
+		(property "Reference" "R12"
+			(at 337.82 179.07 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "1k"
+			(at 337.82 181.61 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
+			(at 335.28 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 335.28 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f4cbee7e-5bba-55c8-851c-c387544989d5")
+		)
+		(pin "2"
+			(uuid "404d586a-8223-518b-b7b6-5df7662c1384")
+		)
+		(instances
+			(project "board"
+				(path "/280d216a-ac40-40e1-a29c-e0f755d20d03"
+					(reference "R12")
 					(unit 1)
 				)
 			)

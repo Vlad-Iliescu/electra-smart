@@ -433,6 +433,81 @@ void ElectraCan::tx_path_selftest(uint32_t assert_ms) {
   this->restore_listen_only_();
 }
 
+void ElectraCan::assist_selftest(uint32_t rounds) {
+  if (!this->bus_is_idle()) {
+    ESP_LOGW(TAG, "assist self-test skipped: line is not idle");
+    return;
+  }
+  if (rounds == 0)
+    rounds = 1;
+
+  // Anything longer than this is not a rise time, it is a stuck line.
+  static constexpr int64_t GIVE_UP_US = 2000;
+
+  this->uninstall_();
+
+  gpio_reset_pin((gpio_num_t) this->tx_);
+  gpio_set_level((gpio_num_t) this->tx_, 1);
+  gpio_set_direction((gpio_num_t) this->tx_, GPIO_MODE_OUTPUT);
+
+  gpio_reset_pin((gpio_num_t) this->rx_);
+  gpio_set_direction((gpio_num_t) this->rx_, GPIO_MODE_INPUT);
+  gpio_set_pull_mode((gpio_num_t) this->rx_, GPIO_FLOATING);
+
+  for (int pass = 0; pass < 2; pass++) {
+    const bool assist = pass == 1;
+    if (assist && this->pullup_ < 0) {
+      ESP_LOGW(TAG, "assist self-test: no assist pin configured, nothing to compare against");
+      break;
+    }
+    this->tx_pullup_(assist);
+    esp_rom_delay_us(500);
+
+    int64_t total = 0;
+    int64_t worst = 0;
+    uint32_t timeouts = 0;
+    for (uint32_t i = 0; i < rounds; i++) {
+      gpio_set_level((gpio_num_t) this->tx_, 0);  // sink the line dominant
+      esp_rom_delay_us(500);
+      if (gpio_get_level((gpio_num_t) this->rx_) != 0) {
+        ESP_LOGE(TAG, "assist self-test INVALID: line would not go dominant");
+        gpio_set_level((gpio_num_t) this->tx_, 1);
+        this->tx_pullup_(false);
+        this->restore_listen_only_();
+        return;
+      }
+
+      const int64_t t0 = esp_timer_get_time();
+      gpio_set_level((gpio_num_t) this->tx_, 1);  // release, and time the climb
+      int64_t rise;
+      for (;;) {
+        rise = esp_timer_get_time() - t0;
+        if (gpio_get_level((gpio_num_t) this->rx_) != 0)
+          break;
+        if (rise >= GIVE_UP_US) {
+          timeouts++;
+          break;
+        }
+      }
+      total += rise;
+      worst = std::max(worst, rise);
+      esp_rom_delay_us(2000);
+    }
+
+    ESP_LOGW(TAG, "assist %s: recessive recovery mean %lld us, worst %lld us over %" PRIu32 " rounds%s",
+             assist ? "ON " : "OFF", total / rounds, worst, rounds,
+             timeouts != 0 ? " (some never recovered)" : "");
+    this->tx_pullup_(false);
+  }
+
+  // One bit at the bus rate, so the numbers above mean something without a
+  // calculator: anything approaching this is fatal to a frame.
+  const uint32_t bit_us = this->nominal_bit_rate_ == 0 ? 88 : 1000000UL / this->nominal_bit_rate_;
+  ESP_LOGW(TAG, "assist self-test done: one bit is %" PRIu32 " us", bit_us);
+
+  this->restore_listen_only_();
+}
+
 void ElectraCan::dump_config() {
   ESP_LOGCONFIG(TAG, "Electra single-wire CAN:");
   ESP_LOGCONFIG(TAG, "  RX pin: GPIO%u", this->rx_);

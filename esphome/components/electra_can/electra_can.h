@@ -92,6 +92,21 @@ class ElectraCan final : public canbus::Canbus {
    */
   void tx_path_selftest(uint32_t assert_ms = 20);
 
+  /* Times how long the line takes to come back recessive, with the assist off
+   * and then on.
+   *
+   * This is the measurement that says whether the assist resistor is doing
+   * anything, without needing a scope on the bench. The transmit pin sinks the
+   * line dominant, releases it, and the receive pin is polled until it reads
+   * high again; both sit on the same wire, so the gap is the real rise time.
+   *
+   * Expect tens of microseconds with the assist off, and a few with it on. If
+   * the two numbers come back the same, the resistor is not connected to the pin
+   * the firmware is driving, or not to the line - which no amount of staring at
+   * the transmit code will reveal.
+   */
+  void assist_selftest(uint32_t rounds = 5);
+
   /* Diagnostic: transmit with the acknowledge slot ignored.
    *
    * Our door frame goes out complete and then fails at the end of the frame,

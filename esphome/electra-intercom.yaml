@@ -249,6 +249,17 @@ button:
     on_press:
       - lambda: id(electra_bus).tx_path_selftest();
 
+  # Bring-up aid: measures how fast the line returns to recessive with the assist
+  # resistor idle and then driven. Without it that takes ~40 us of an 88 us bit,
+  # which is why untreated frames are rejected. Two equal numbers mean the
+  # resistor is not between the assist pin and C/D.
+  - platform: template
+    name: Assist self-test
+    entity_category: diagnostic
+    icon: mdi:speedometer
+    on_press:
+      - lambda: id(electra_bus).assist_selftest();
+
 switch:
   # The relay coil. Wired through the normally-closed contact so that
   # de-energised means the speaker is connected: if this board loses power or
