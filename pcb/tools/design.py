@@ -74,10 +74,19 @@ PARTS = {
     'R5':  ('Device:R', '47R', R0603, 245, 180, 'right'),
     'R6':  ('Device:R', '1k', R0603, 270, 180, 'right'),
     'D3':  ('Diode:BAT54S', 'BAT54SLT1G', SOT23, 305, 180, 'top'),
-    # Recessive assist, see the CD_ASSIST net. Value set by the bus it drives:
-    # low enough that the line climbs in a few percent of a bit, high enough that
-    # any node's dominant still wins and costs it only ~3.3 mA to overrule.
-    'R12': ('Device:R', '1k', R0603, 335, 180, 'right'),
+    # Recessive assist, see the CD_ASSIST net. 240 R is measured, not chosen: it
+    # is the value that made a door frame legal on this building's bus. It has to
+    # be well below the intercom's own ~1 k pull-up, because a comparable value
+    # only halves the recovery time - 1 k measured 22 us of an 87 us bit and every
+    # frame was rejected, while 240 R measured 8 us and the panel acknowledged us.
+    #
+    # Do not shrink it further without checking the other end of the trade. While
+    # a bit is dominant, this resistor is still sourcing into the line against R5,
+    # so it lifts the dominant level off ground: ~0.28 V at 1 k, ~0.65 V at 240 R,
+    # ~0.78 V at 180 R, against a threshold around 1.5 V. 240 R keeps ~0.9 V of
+    # margin and costs GPIO5 11.5 mA while dominant. 180 R buys a slightly faster
+    # edge by spending that margin, so it is not a free "if skew is still fat" step.
+    'R12': ('Device:R', '240R', R0603, 335, 180, 'right'),
     # --- speaker-mute relay ----------------------------------------------
     'R7':  ('Device:R', '1k', R0603, 40, 245, 'right'),
     'R8':  ('Device:R', '10k', R0603, 65, 245, 'right'),
@@ -172,21 +181,29 @@ NETS = {
 
     # Recessive assist, and the reason transmitting did not work at all until it
     # existed. U2 is open-drain, so it can only sink; nothing on this board pulled
-    # C/D back up, leaving that to the intercom's own pull-up. Measured, that is
-    # ~45 k against ~1.4 nF, so releasing the line takes ~44 us of an 88 us bit.
-    # Every dominant bit we sent overran its slot by half a bit, so other nodes
-    # mis-sampled the frame and answered with an error flag - which read as "never
-    # acknowledged" and drove us bus-off on all 32 retries.
+    # C/D back up, leaving that to the intercom's own pull-up. Measured on the
+    # wall, releasing the line takes ~44 us of an 87 us bit. Every dominant bit we
+    # sent overran its slot, so other nodes mis-sampled the frame and answered
+    # with an error flag - which reads as "never acknowledged" from our side and
+    # drove the controller bus-off on all 32 retries.
     #
-    # R12 pulls the line up hard, but only while a frame is going out. Driven
-    # permanently it would fight whatever holds the bus dominant weakly, measured
-    # as bursts of ~58 kHz relaxation oscillation, and it would leave a 1 k path
-    # to a dead rail on shared building wiring. GPIO5 is an input at every other
-    # instant, including before setup() runs and while the board is unpowered,
-    # which keeps the fail-safe the rest of this design is built around.
+    # The bus pull-up is about 1 k: adding 1 k in parallel halved the recovery to
+    # 22 us, and only an equal resistor does that. Hence R12 at 240 R, which took
+    # it to 8 us and produced the first frame the panel acknowledged.
     #
-    # This is how a single-wire CAN transceiver behaves: recessive is driven, but
-    # only by the node that is talking, and weakly enough that dominant wins.
+    # R12 pulls the line up, but only while a frame is going out. Driven
+    # permanently it fights whatever holds the bus dominant weakly - that showed
+    # up as bursts of ~58 kHz relaxation oscillation - and it would leave a
+    # low-value path to a dead rail on shared building wiring. GPIO5 is an input
+    # at every other instant, including before setup() runs and while the board is
+    # unpowered, which preserves the fail-safe the rest of this design is built on.
+    #
+    # This is roughly how a single-wire CAN transceiver behaves: recessive is
+    # driven, but only by the node that is talking. A transceiver does it better,
+    # by following the transmitted bit so it stops sourcing during dominant bits.
+    # A 74LVC1G125 with its input on CAN_TX and /OE gated by GPIO5 would reproduce
+    # that and let R12 grow again; it was considered and set aside to keep the
+    # proven circuit. Revisit only if the dominant margin above becomes a problem.
     'CD_ASSIST': [('U3', '5', 'GPIO5'), ('R12', '1', None)],
 
     # RX with a series resistor and a BAT54S clamping to the 3V3 rail / GND.

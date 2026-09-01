@@ -9,6 +9,8 @@ cost most of a day partly because a flying-lead rig cannot be trusted: every
 measurement that disagreed with expectation raised "is that the circuit or the
 clip?", and there was no way to answer. This block is the one whose edges we ended
 up measuring in tens of microseconds, so it is the one that has to stop moving.
+It earned that: on the rebuilt board a door frame finally transmitted and was
+acknowledged on 28 Aug 2026.
 
 Designators match `pcb/tools/design.py`, so anything learned here transfers to the
 board. The connections below are transcribed from `check_net.py` output after it
@@ -23,14 +25,39 @@ reported *netlist matches design.py exactly*.
 | `R4` | 10 k | 0603 | TX pull-up, **buffer input side** |
 | `R5` | 47 R | 0603 | TX series into the line |
 | `R6` | 1 k | 0603 | RX series |
-| `R12` | 1 k | 0603 | **recessive assist, new part** |
+| `R12` | **240 R** | 0603 | **recessive assist, new part** |
 | `D3` | BAT54SLT1G | SOT-23 | RX clamp |
 
 `R12` did not exist when the gerbers were exported. It is the reason this node can
 transmit at all: `U2` is open-drain and can only sink, and nothing on the board
-pulled `C/D` back up, so releasing the line was left to the intercom's own pull-up
-— measured at roughly 45 kΩ against about 1.4 nF, which takes ~44 µs of an 87 µs
-bit. Every frame we sent overran its bit slots and was rejected.
+pulled `C/D` back up, so releasing the line was left to the intercom's own pull-up.
+Measured on the wall, that takes ~44 µs of an 87 µs bit — every dominant bit we
+sent overran its slot, so other nodes mis-sampled the frame and rejected it.
+
+**The value is measured, not chosen, and 1 k is not an option.** The bus pull-up is
+about 1 kΩ: adding 1 kΩ in parallel *halved* the recovery to 22 µs, which only an
+equal resistor can do. A quarter of a bit is still fatal, and every frame sent with
+1 k bus-off'd. 240 R took it to 8 µs and produced the first frame the panel
+acknowledged.
+
+Shrinking it further is not free. While a bit is dominant, `R12` is still sourcing
+into the line against `R5`, lifting the dominant level off ground:
+
+| `R12` | Recovery | Dominant level | GPIO5 current |
+|---|---|---|---|
+| 1 k | 22 µs — **fails** | 0.28 V | 3.2 mA |
+| 330 R | ~11 µs | 0.53 V | 8.7 mA |
+| **240 R** | **8 µs — proven** | **0.65 V** | 11.5 mA |
+| 180 R | ~6 µs | 0.78 V | 14.5 mA |
+
+Levels include the bus pull-up. Against a threshold around 1.5 V, 240 R keeps
+about 0.9 V of dominant margin. 180 R buys a slightly faster edge by spending that
+margin, so treat it as a trade rather than a free improvement.
+
+If more margin is ever needed, the answer is not a smaller resistor but a
+`74LVC1G125` with its input on `CAN_TX` and `/OE` gated by GPIO5, so the assist
+follows the transmitted bit and stops sourcing during dominant bits. That was
+considered and set aside to keep the proven circuit.
 
 `C7` is not optional even though it looks like garnish. It goes physically across
 `U2` pins 5 and 3, not somewhere convenient.
@@ -61,7 +88,7 @@ against the schematic, ignore it while soldering.
 | | 2 | **intercom `C/D`**, `R6.1`, `R12.2` | `CD` |
 | **`R6`** 1 k | 1 | **intercom `C/D`**, `R5.2`, `R12.2` | `CD` |
 | | 2 | `U3.GPIO20`, `D3.3` | `CAN_RX` |
-| **`R12`** 1 k | 1 | `U3.GPIO5` | `CD_ASSIST` |
+| **`R12`** 240 R | 1 | `U3.GPIO5` | `CD_ASSIST` |
 | | 2 | **intercom `C/D`**, `R5.2`, `R6.1` | `CD` |
 | **`D3`** BAT54S | 1 (A) | `U3.GND`, `U2.3`, `C7.2` | `GND` |
 | | 2 (K) | `U3.3V3`, `U2.5`, `C7.1`, `R4.1` | `3V3` |
@@ -126,10 +153,12 @@ recessive the default at every instant the firmware is not in control.
 
 **`R12` must not become a permanent pull-up.** It goes to GPIO5, which the
 firmware drives high only while a frame is going out and leaves as a floating
-input the rest of the time. Tied to 3V3 instead it does work — that is how the fix
-was proven — but it then fights whatever holds the bus dominant weakly, which
-showed up as bursts of ~58 kHz oscillation, and it would leave a 1 kΩ path to a
-dead rail on shared building wiring if this board ever loses power.
+input the rest of the time. Tied to 3V3 instead it does work electrically — that
+is how the fix was first proven, and jumpering GPIO5 to 3V3 was also the A/B test
+that ruled out weak pin drive — but permanently connected it fights whatever holds
+the bus dominant weakly, which showed up as bursts of ~58 kHz oscillation, and it
+would leave a low-value path to a dead rail on shared building wiring if this board
+ever loses power.
 
 ## Layout
 
@@ -151,34 +180,53 @@ Do it in this order; each step ends somewhere you can check.
    normally — call, answer, door, screen. Then run **TX path self-test**, which
    should PASS.
 3. **The assist.** `R12` from GPIO5 to `C/D`. Run **Assist self-test** and check
-   the numbers below *before* sending a frame.
+   the numbers below *before* sending a frame. **Do not press Open door** until
+   assist ON reads in the single-digit microseconds — it unlocks the building door,
+   and a frame sent with a weak assist will bus-off instead.
 
-### Assist self-test, with `C/D` connected to the real bus
+### Assist self-test decoder
 
-| Reading | Verdict |
+The test sinks the line through GPIO21 and `U2`, then times the rise on GPIO20.
+One bit is 87 µs and it gives up at 2000 µs. It holds the line dominant for 500 µs
+first, so it reports the fully discharged worst case — in-frame edges recover from
+only a few dominant bits and come out better than this, which is why a frame can
+measure +6.2% skew while the self-test says 8 µs.
+
+| assist ON | Meaning on *this* bus |
 |---|---|
-| assist OFF ~44 µs | correct — this is the bus on its own |
-| assist ON **1–2 µs** | correct, `R12` is working |
-| assist ON ~22 µs | **wrong** — behaving like tens of kΩ, so either `R12` is not 1 k or GPIO5 is not driving |
-| either ~2000 µs | line never recovered — `C/D` is not connected |
+| 1–2 µs | Isolated bench with `C/D` off the wall — almost no capacitance, proves wiring and gating only |
+| **8–10 µs** | **Working.** 240 R on the live bus. This is the state that transmitted |
+| ~22 µs | 1 kΩ on the live bus. Too weak for this capacitance — TX will bus-off. Not a wrong part |
+| ~2000 µs | Line never recovered — `C/D` is not actually connected |
 
-One bit is 87 µs, so 1–2 µs is a couple of percent and harmless, while 22 µs is a
-quarter of a bit and will still corrupt frames.
+Assist OFF should read **~44 µs**, which is the intercom's pull-up on its own and
+confirms you really are on the bus. Two OFF readings that mean something else:
+~600 µs is a high-resistance joint or extra capacitance — long Dupont crimps did
+exactly this — and a mean far above the worst-case spread (e.g. 155 µs mean with a
+611 µs worst over five rounds) is usually four good rounds plus one collision with
+real bus traffic, not a fault.
 
 ### Then transmit
 
 A working frame reads on the analyzer as
-`ID=0x0DF DLC=4 data: 02 07 01 00 CRC MATCH ACK`, and `tools/bit_timing.py` should
-report skew within a couple of percent of a bit. For reference, the terminal's own
-driver measures −1.3% and a good frame from us measured +1.1%; an untreated frame
-measured +46%.
+`ID=0x0DF DLC=4 data: 02 07 01 00 CRC MATCH ACK`, the controller logs `tx done`
+with TEC 0, and the panel answers `0x0DF 01 01 07` about 26 ms later. For skew
+reference from `tools/bit_timing.py`:
+
+| Frame | Skew |
+|---|---|
+| Terminal's own driver | −1.3% |
+| Ours, 240 R on the wall | **+6.2%** — acknowledged |
+| Ours, 1 kΩ on the wall | +29% — rejected |
+| Ours, no assist at all | +46% — rejected |
 
 ## Open items
 
-- That 22 µs reading is **the current unresolved symptom** on the flying-lead rig,
-  and it is why this exists. Rebuild solidly and the answer is either "fixed, it
-  was the wiring" or "still 22 µs, so it is the pin".
-- `R12` at 1 k is provisional: the smallest load the bus has to overrule that
-  still gives a fast enough edge. If it ever needs to be gentler, this is the knob.
+- The perfboard currently has a **330 Ω tack in parallel with the 1 kΩ `R12`**,
+  giving the 245 Ω that was proven. `design.py` now specifies a single 240 R part.
+  Do not remove the tack until that part is fitted.
+- Whether the acknowledged frame actually moved the lock has not been confirmed —
+  the panel acked it, but nobody was at the door.
 - OTA reports success without taking effect, so the node had to be flashed over
-  USB. Worth resolving before anything is closed into the housing.
+  USB at offset 0. Worth resolving before anything is closed into the housing,
+  because USB is not reachable afterwards.

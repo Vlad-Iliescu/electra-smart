@@ -82,6 +82,7 @@ section for which choices actually matter and which are theatre.
 | **R6** | 1 | 1 k resistor `CRCW06031K00JNEA` | 0603 | CAN RX series limit |
 | **R7** | 1 | 1 k resistor, same part as R6 | 0603 | `Q2` base. **So this part is 2 per board** |
 | **R5** | 1 | 47 R resistor `CRCW060347R0JNEA` | 0603 | CAN TX series limit |
+| **R12** | 1 | **240 R resistor `CRCW0603240RJNEA`** | 0603 | **Gated recessive assist on `C/D`, and the part without which this node cannot transmit at all.** Value is measured on this building's bus, not chosen - see the `R12` note before substituting. **Buy this even if you already have 330 R and 1 k**, and do not fit those instead |
 | **R9** | 1 | 150 R resistor `CRCW0603150RJNEA` | 0603 | `K1` coil dropper: 13.5 V across 1315 + 150 ohm draws 9.2 mA, so the 12 V coil sees **12.12 V** |
 | **R10** | 1 | 330 R resistor `CRCW0603330RJNEA` | 0603 | `LED1` data line. Buy 2 if you want the two-plain-LED fallback available - at **(3.3 - 2.0) / 330 = 3.9 mA** it doubles as their series resistor |
 | **C7** | 1 | 100 nF ceramic | 0603, 50 V | Decoupling at `U2`. **Same part as C2, C5 and C9** (`CGA3E3X8R1H104K080AB`), so that part is **4 per board** in total |
@@ -106,7 +107,7 @@ SOT-23s. Fill it in for every line. The full allocation:
 |---|---|
 | Regulator | `U1` buck, `L1`, `C1` in, `C2` in bypass, `C3`/`C4` out, `C5` bootstrap, `R1` bootstrap series, `C6` bulk |
 | Input protection | `F1` fuse, `Q1` reverse-polarity P-FET, `R2`/`R3` gate divider, `D1` TVS |
-| CAN interface | `U2` buffer, `R4` TX pull-up, `R5` TX series, `R6` RX series, `D3` RX clamp |
+| CAN interface | `U2` buffer, `R4` TX pull-up, `R5` TX series, `R6` RX series, `R12` recessive assist, `D3` RX clamp |
 | Relay / Silent | `K1` relay, `Q2` NPN, `R7` base, `R8` base-emitter, `R9` coil dropper, `D2` flyback |
 | Indicator | `LED1`, `R10` data series |
 | Mode button | `SW1` side-push switch, `R11` pull-up, `C9` debounce |
@@ -148,6 +149,11 @@ older revision and in none of the Digi-Key orders placed on 12 Aug. `R11` and `C
 extra pieces of two part numbers already on the list, so they change the quantities in
 the table below rather than adding lines to it; only `SW1` is a genuinely new purchase,
 and it does not come from Digi-Key.
+
+**`R12` was added later still**, on 25 Aug 2026 during transmit bring-up, and its value
+was settled on 28 Aug. It is a genuinely new Digi-Key line — 240 R is not otherwise on
+the board — and it appears in no order placed so far. It is also **not optional**: with
+it absent the node receives perfectly and cannot transmit at all.
 
 **Three lines need a compound reference, and it is easy to get wrong** because one part
 number serves more than one position:
@@ -557,17 +563,33 @@ This part has TI's **Ioff** partial-power-down feature: with VCC at 0 V, the inp
 output leak no more than **10 uA** even with voltage applied to them. So if our node
 loses power or is disconnected, the buffer cannot load or pull the `C/D` line.
 
-Together with the 10 k pull-up, that closes the fail-safe story completely. The
+Together with the 10 k pull-up, that closes the **fail-safe** story completely. The
 intercom is undisturbed whether our board is running, rebooting, mid-OTA, crashed, or
 completely dead.
 
+It does **not** close the *transmit* story, which earlier revisions of this document
+assumed it did. An open-drain driver can only sink, so releasing the line back to
+recessive was left to the intercom's own pull-up — measured at about 1 kΩ, which
+takes ~44 µs of an 87 µs bit. Every frame we sent was mis-sampled and rejected, and
+the controller went bus-off on all 32 retries. The fix is `R12`, a gated recessive
+assist; see [Transmitting on C/D](#transmitting-on-cd-and-why-it-did-not-work-at-first)
+below. Fail-safe survives it because the assist hangs off a GPIO that is an input at
+every instant the firmware is not deliberately transmitting.
+
 ### Acceptable substitutions
 
-- **`74LVC1G125` instead of `74LVC1G07`**: works, but only wired as **input tied to
-  GND, `/OE` driven by CAN TX**. Since `/OE` is active-low, TX low enables the
-  output and drives the grounded input onto the line (dominant), TX high tri-states
-  it (recessive). Do *not* put TX on the input and `/OE` on a GPIO — enabled, it
-  would drive the recessive state actively high and fight the bus.
+- **`74LVC1G125` instead of `74LVC1G07`**: works, wired as **input tied to GND,
+  `/OE` driven by CAN TX**. Since `/OE` is active-low, TX low enables the output and
+  drives the grounded input onto the line (dominant), TX high tri-states it
+  (recessive).
+  This entry used to warn against the other wiring — TX on the input, `/OE` on a
+  GPIO — on the grounds that it would "drive the recessive state actively high and
+  fight the bus". That reasoning was wrong, and the transmit bring-up proved it:
+  driving recessive actively is exactly what this bus needs, and a passive
+  open-drain stage cannot transmit here at all. That wiring is in fact the *better*
+  assist topology, because the output then follows the transmitted bit and stops
+  sourcing during dominant bits. It was set aside only because the plain `1G07`
+  plus a gated `R12` was already proven on the wall. See `R12` below.
 - **`SK6812` instead of the specified `WS2812B`**: **do not.** Earlier revisions of this
   document had it the other way round and were wrong — the `SK6812` 5050 is 3.5 V minimum
   and the `MINI-E` 3.7 V, so neither meets our 3.3 V rail, while the `WS2812B` is specified
@@ -580,6 +602,107 @@ completely dead.
   green dice have the same 2.8-3.4 V Vf as the pixel's.
 - **Optocoupler (PC817) on `GONG1`/`GONG2`**: no longer needed. Ring detection comes
   off the CAN bus. Only worth adding as a fallback if bus receive proves unreliable.
+
+## Transmitting on C/D, and why it did not work at first
+
+Receiving worked from the first build. Transmitting did not work at all, and the
+reason was not in this document's original design — the open-drain buffer plus a
+10 k pull-up on its *input* is a complete and correct **fail-safe** story, and an
+incomplete **transmit** story. Blow-by-blow account in
+`docs/tx-bringup-catchup.md`; the conclusions are here.
+
+### The symptom, and four things it was not
+
+Every frame failed identically: 32 retries, TEC 128, bus-off, errors landing at
+~95 bit times — the acknowledgement region. Receive stayed perfect throughout, with
+REC at 0 while TEC exploded. Ruled out, each with a test, so **do not re-prove
+these**:
+
+- **Baud.** Terminal frames CRC-match at 11364 with −1.3% skew. If the rate were
+  wrong, receive would fail first.
+- **A bus that never acknowledges.** Captures of the terminal's own traffic show the
+  ACK slot pulled dominant by other nodes.
+- **A missing ACK on our frames specifically.** `TWAI_MODE_NO_ACK` with
+  `TWAI_MSG_FLAG_SELF` failed at the same 95 bit times, so the controller was not
+  waiting on an acknowledgement that never came.
+- **A dead transmit path or a weak GPIO.** The TX path self-test passes: driving
+  GPIO21 pulls `C/D` dominant and it recovers. Separately, jumpering GPIO5 to 3V3 —
+  making `R12` a plain rail pull-up, no GPIO involved — reproduced the failure
+  exactly, at +28.5% skew versus +29%.
+
+### The actual cause
+
+`U2` is open-drain, so it can only *sink*. Nothing on this board pulled `C/D` back
+up, which left recovery to recessive to the intercom's own pull-up. Measured on the
+wall, that takes **~44 µs of an 87 µs bit**: every dominant bit we sent overran its
+slot by half a bit, other nodes mis-sampled the frame, and their error flags read
+from our side as "never acknowledged".
+
+Analyzer captures make it unarguable. Same probe, same session: the terminal's
+frames CRC-match at −1.3% skew, ours came out at +46% with garbage payloads.
+
+**The bus pull-up is about 1 kΩ**, which is the number that explains the whole
+episode. Adding 1 kΩ in parallel *halved* recovery to 22 µs, and only a resistor
+equal to what is already there can halve it. So a 1 kΩ assist was never going to be
+enough — it can only ever buy a factor of two, and a quarter of a bit is still
+fatal. The assist has to be well *below* the bus pull-up, not comparable to it.
+
+### `R12`, and why 240 R
+
+240 R took recovery to **8 µs** and the very next door frame read
+`ID=0x0DF DLC=4 data: 02 07 01 00 CRC MATCH ACK` at +6.2% skew, with `tx done`,
+TEC 0, and the panel's `0x0DF 01 01 07` acknowledgement 26 ms later.
+
+The value is measured on this building's bus, not calculated, so treat substitution
+carefully — and note that going *smaller* is not a free improvement. While a bit is
+dominant, `R12` is still sourcing into the line against `R5`, which lifts the
+dominant level off ground:
+
+| `R12` | Recovery | Dominant level | GPIO5 current | Verdict |
+|---|---|---|---|---|
+| 1 k | 22 µs | 0.28 V | 3.2 mA | **fails on this bus** |
+| 330 R | ~11 µs | 0.53 V | 8.7 mA | untested alone |
+| **240 R** | **8 µs** | **0.65 V** | 11.5 mA | **proven** |
+| 180 R | ~6 µs | 0.78 V | 14.5 mA | trades dominant margin for edge |
+
+Levels include the bus pull-up; the threshold is around 1.5 V, so 240 R keeps about
+0.9 V of dominant margin. Pulse dissipation at 240 R is ~45 mW in a 100 mW part, and
+`R5` at 47 R sets the floor on how hard `U2` may be asked to sink.
+
+### It must be gated, and that is what keeps the fail-safe
+
+Tied permanently to 3V3, `R12` works electrically — that is how the fix was first
+proven — but it is not acceptable on shared building wiring:
+
+- It fights whatever holds the bus dominant weakly. Measured: bursts of **~58 kHz
+  relaxation oscillation** on an otherwise idle bus.
+- It would leave a low-value path from a dead rail onto a line the whole building
+  depends on.
+
+So `R12` lands on **GPIO5**, which the firmware drives high only across the transmit
+window and leaves as a floating input with pulls disabled at every other instant —
+including before `setup()` runs and while the board is unpowered. Combined with
+`U2`'s Ioff and `R4` on the buffer input, a dead or rebooting board still cannot
+disturb the intercom. This is roughly what a single-wire CAN transceiver does:
+recessive is driven, but only by the node that is talking.
+
+### If more margin is ever needed
+
+Not a smaller resistor. A **`74LVC1G125`** with its input on `CAN_TX` and `/OE`
+gated by GPIO5 makes the assist follow the transmitted bit, so it pulls up during
+recessive and stops sourcing during dominant — dominant returns to near ground and
+`R12` can grow again. Considered and set aside to keep the circuit that is proven on
+the wall. Note this is the wiring an earlier revision of the substitutions list
+warned against, on reasoning the bring-up disproved.
+
+### Verifying it without a scope
+
+Firmware exposes an **Assist self-test** button that sinks the line and times the
+rise, so the resistor can be checked from Home Assistant. Expected readings, what
+each one means, and the OFF-side diagnostics are tabulated in `docs/perfboard.md`.
+Short version: **assist ON in the single digits of microseconds is the pass**, ~22 µs
+means too weak for this bus, and ~2000 µs means `C/D` is not actually connected. Do
+not send a door frame until it passes — it unlocks the building door.
 
 ## The KiCad project
 
@@ -1664,10 +1787,11 @@ first flash happens on the bench and everything after that is OTA.
 |---|---|---|---|
 | CAN RX | 20 | in | via 1 k, clamped |
 | CAN TX | 21 | out | via buffer, **10 k pull-up to 3V3** |
+| **Recessive assist** | **5** | **out, gated** | via 240 R (`R12`) to `C/D`. Driven high **only** while transmitting; a floating input with pulls disabled otherwise |
 | Speaker relay | 6 | out | via transistor |
 | Status LED data | 7 | out | via 330 R |
 | Mode button | 10 | in | active low, **10 k pull-up to 3V3** (`R11`), 100 nF (`C9`) |
-| *spare* | 0, 1, 3, 4, 5 | | available if needed |
+| *spare* | 0, 1, 3, 4 | | available if needed |
 
 Unavailable on the C3: **GPIO11-17** are the SPI flash, **GPIO18/19** are the native
 USB, and **GPIO2/8/9** are strapping pins best left alone.
@@ -1731,6 +1855,15 @@ INTERCOM TERMINAL BLOCK (Line OUT, unused)
                                                       |
                                                       +--> C/D
 
+   ---- RECESSIVE ASSIST (R12) ----
+   GPIO5 ---[ 240R ]---> C/D
+
+   Firmware drives GPIO5 high only while a frame is going out, and leaves it a
+   floating input with pulls disabled at every other instant. Without this the
+   node cannot transmit at all: the open-drain stage above can only sink, so
+   recovery to recessive relies on the intercom's own ~1 k pull-up and takes
+   ~44 us of an 87 us bit. Do NOT wire this to 3V3 instead - see the R12 section.
+
    ---- SPEAKER RELAY (Silent) ----
    GPIO6 ---[ 1k ]--- base | BCW65A
                       base ---[ 10k ]--- GND   (holds base down through boot)
@@ -1763,7 +1896,8 @@ INTERCOM TERMINAL BLOCK (Line OUT, unused)
 
    (Fallback if a bench check shows weak blue/green - see the LED note:
     GPIO7 ---[ 330R ]---|>|--- GND   red   = Silent armed
-    GPIO5 ---[ 330R ]---|>|--- GND   amber = Auto-open armed)
+    GPIO4 ---[ 330R ]---|>|--- GND   amber = Auto-open armed
+    This used to say GPIO5, which is now the recessive assist. Do not reuse it.)
 
    ---- MODE BUTTON ----
    3V3 ---[ 10k ]---+-------------------> GPIO10
@@ -1876,7 +2010,7 @@ times too small to matter. And the plausible fault, `C/D` shorted to `+U`, drive
 9.8 mA through the 1 k into the 3.3 V rail: 5% of the diode's DC rating, and a current
 the ESP32's own consumption swallows without the rail lifting.
 
-## Three details that will bite if skipped
+## Four details that will bite if skipped
 
 ### 1. The 10 k pull-up on CAN TX is not optional
 
@@ -1950,6 +2084,15 @@ from its own supply and take only `C/D` and `GND` from the intercom.
 The regulator's 2 ms soft-start helps here: it limits inrush so powering up our node
 does not disturb the shared bus.
 
+### 4. `R12` goes to GPIO5, never to 3V3
+
+It is the difference between a node that can transmit and one that only listens, so
+it is tempting to tack it to the rail and be done. Do not. A permanent pull-up on
+`C/D` turns weak dominant holds into ~58 kHz oscillation on a bus the whole building
+shares, and it leaves a low-value path from a dead rail onto that bus. Gated on
+GPIO5, the same resistor is active only while we are actually sending a frame. Full
+reasoning in [Transmitting on C/D](#transmitting-on-cd-and-why-it-did-not-work-at-first).
+
 ## Assembly order
 
 Each step is safe alone and verifies one thing. Do not skip ahead.
@@ -1968,11 +2111,16 @@ Each step is safe alone and verifies one thing. Do not skip ahead.
 4. **Add the TX buffer, then stop.** Fit the buffer *and its pull-up*. Before
    transmitting anything, confirm `C/D` still idles at 3.3 V and that the intercom
    still works completely normally — calls, answer, door, screen. This proves the
-   node is electrically invisible.
-5. **Transmit.** Press "Open door" with the line idle.
-6. **Relay last.** Fit the JST adapter, arm Silent, ring, confirm silence, then answer
+   node is electrically invisible. Run **TX path self-test**, which should PASS.
+5. **Fit `R12` and run Assist self-test — before sending anything.** Assist OFF should
+   read ~44 µs and ON in the single digits of microseconds. Anything near 22 µs means
+   the assist is too weak for this bus and the frame will bus-off; ~2000 µs means `C/D`
+   is not really connected. Decoder table in `docs/perfboard.md`.
+6. **Transmit.** Press "Open door" with the line idle, and only once step 5 passed. It
+   unlocks the building door, so know who is on the other side of it.
+7. **Relay last.** Fit the JST adapter, arm Silent, ring, confirm silence, then answer
    and confirm you can hear.
-7. **Mode button, on the bench without the button.** `SW1` only exists on the PCB, but
+8. **Mode button, on the bench without the button.** `SW1` only exists on the PCB, but
    the firmware side tests now: the pull-up is on the board, so **momentarily shorting
    GPIO10 to GND with a jumper wire is a press**. Confirm each one advances the state and
    that the status LED follows. Worth doing before the PCB exists, because it is the

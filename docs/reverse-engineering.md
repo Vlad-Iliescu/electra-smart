@@ -466,6 +466,7 @@ The ESP32-C3 has a built-in **TWAI** (CAN) peripheral, so instead of bit-banging
 - **RX:** `C/D` -> ~1 k series resistor -> TWAI RX GPIO (already 3.3 V, direct). Add a BAT54S clamp to 3V3/GND if B9 shows the audio swinging outside the rails.
 - **TX:** TWAI TX -> **74LVC1G07** (single-gate *non-inverting open-drain* buffer) -> ~47 R -> `C/D`. TX low pulls the bus dominant-low; TX high leaves it high-Z/recessive. That is precisely a single-wire CAN driver in one tiny IC (no MOSFET+inverter needed, no level shifting).
 - **10 k pull-up from the TWAI TX pin to 3V3 is mandatory.** That GPIO is a floating input before `setup()` runs, during the listen-only/normal mode swap, and across reboots and OTA. Without the pull-up the buffer input floats and could pull the bus dominant, jamming the intercom.
+- **A gated recessive assist is also mandatory, and this list originally missed it.** 240 R from a GPIO to `C/D`, driven high only while transmitting. Open-drain alone cannot transmit on this bus at all - see E2.
 
 **Correction to the note added after C12.** That note said to use a tri-state
 `74LVC1G125` with `OE` on a GPIO so the ESP32 "physically cannot drive `C/D`". As
@@ -485,6 +486,62 @@ the TWAI controller holds TX recessive, so an open-drain output is already high-
 and cannot disturb the bus. Listen-only plus the pull-up gives the same guarantee
 with fewer parts.
 
+**Second correction, 2026-08-28.** The paragraph above rejects driving recessive
+actively high as something a single-wire CAN node "may only ever" avoid. On this bus
+that is not true, and believing it cost most of a week. Nothing above is wrong about
+*arbitration* — a node that drives recessive hard cannot be overruled — but a node
+that never drives recessive at all cannot transmit here either. See below.
+
+### E2. The transmit stage does not work open-drain alone (2026-08-28)
+
+Receive worked from the first build. Transmit failed on every attempt: 32 retries,
+TEC 128, bus-off, with the errors landing at ~95 bit times — the acknowledgement
+region — while REC stayed at 0.
+
+**It was not the protocol.** Ruled out individually: the bit rate (terminal frames
+CRC-match at 11364), a bus that does not acknowledge (the ACK slot in captures of
+terminal traffic is pulled dominant by other nodes), a missing acknowledgement of our
+frames specifically (`TWAI_MODE_NO_ACK` with `TWAI_MSG_FLAG_SELF` failed identically),
+and a dead transmit path (a firmware loopback self-test pulls `C/D` dominant and sees
+it recover).
+
+**The cause is edge speed.** `74LVC1G07` is open-drain and can only sink, so return to
+recessive was left entirely to the intercom's own pull-up. Measured on the wall that
+takes **~44 µs of an 87.9 µs bit**. Every dominant bit we sent overran its slot by
+about half a bit, so other nodes mis-sampled the frame and raised error flags, which
+from our side is indistinguishable from never being acknowledged.
+
+Captures settle it. Same probe, same session:
+
+| Frame source | Skew | CRC |
+|---|---|---|
+| Terminal's own driver | −1.3% | match |
+| Ours, open-drain only | +46% | garbage payload |
+| Ours, 1 kΩ assist | +29% | 0 of 52 valid |
+| Ours, 240 R assist | **+6.2%** | **match, ACK** |
+
+**The bus pull-up is about 1 kΩ.** This is the number that explains the whole episode:
+adding 1 kΩ in parallel *halved* recovery from 44 to 22 µs, and only a resistor equal
+to what is already present can halve it. So a 1 kΩ assist could never be enough. It
+has to be well below the bus pull-up — 240 R gives 8 µs.
+
+With it, `0x0DF 02 07 01 00` transmitted clean: `CRC MATCH ACK`, `tx done`, TEC 0, and
+the panel replied `0x0DF 01 01 07` 26 ms later, which is the acknowledgement of open
+already catalogued in C3.
+
+**The assist must be gated, not tied to the rail.** A permanent pull-up on `C/D` turns
+weak dominant holds — the seconds-long holds documented in C4 and C6 — into bursts of
+~58 kHz relaxation oscillation, and it would put a low-value path from a dead rail onto
+a bus the whole building shares. So it hangs off a GPIO driven high only across the
+transmit window. Circuit values, the dominant-level trade-off, and the `74LVC1G125`
+variant that would remove that trade-off are in `docs/wiring.md`; the session log is in
+`docs/tx-bringup-catchup.md`.
+
+One consequence worth recording for anyone reading the public projects listed in
+`docs/links.txt`: none of them transmit on `C/D`. adrian-dobre, kind3r and the analog
+Electra work all pull *button nets* instead, and simpalean is a closed module. So there
+was no prior art to compare against, which is part of why this took as long as it did.
+
 ## G. What this gives us for the integration
 
 | Need | Implementation |
@@ -493,7 +550,7 @@ with fewer parts.
 | Ring cleared | receive `0x0DF` + `04 04` (explicit call-end, so no timeout guessing; window ~59.7 s) |
 | Call answered elsewhere | receive `0x001` + `01 05 DF 00` |
 | Audio session active | receive `0x000` + `00 02`, or simply watch for the line going dominant |
-| Open the door | transmit `0x0DF` + `02 07 01 00` |
+| Open the door | transmit `0x0DF` + `02 07 01 00`. **Confirmed working 2026-08-28**, but only with the recessive assist fitted (E2) |
 | Monitoring detected / triggered | receive or transmit `0x0DF` + `02 08 00` |
 | Silent | **relay contact in the speaker leg** - there is no MUTE frame (C13c) |
 

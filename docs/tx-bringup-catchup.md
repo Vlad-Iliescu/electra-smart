@@ -20,8 +20,12 @@ was **recessive assist too weak for this building's bus C**. `R12` at 1 kΩ rose
 in 22 µs (a quarter of an 87 µs bit) and every frame was illegal. `1 kΩ || 330 Ω
 ≈ 245 Ω` from GPIO5 to C/D rose in 8 µs and the same firmware sent a legal frame.
 
-`design.py` / BOM / gerbers still say `R12` = 1 kΩ. The perfboard has a 330 Ω
-tack in parallel. Do not desolder that tack until the BOM part is fitted.
+The perfboard has a 330 Ω tack in parallel with the fitted 1 kΩ. Do not desolder
+that tack until a single 240 R part replaces both.
+
+**Updated 2026-09-01:** `design.py` and the `wiring.md` BOM now say **240 R**
+(`CRCW0603240RJNEA`). The **gerbers still do not contain `R12` at all** — the PCB
+has not been re-laid. See the pending list.
 
 ## Already true before this window (do not re-prove)
 
@@ -176,8 +180,10 @@ Do not BOM 1 kΩ || 330 Ω.
 | 330 Ω | `CRCW0603330RJNEA` (already `R10`) | First step weaker |
 | 180 Ω | `CRCW0603180RJNEA` | Stronger if skew is still fat. Do not go below: `R5` 47 Ω and GPIO current |
 
-1 kΩ is not an `R12` option. GPIO5 into 240 Ω is ~14 mA while dominant; pulse
-power ~45 mW in a 100 mW part.
+1 kΩ is not an `R12` option. GPIO5 into 240 Ω plus `R5` 47 Ω is ~11.5 mA while
+dominant; pulse power ~45 mW in a 100 mW part. The same current is what lifts the
+dominant level to ~0.65 V, which is why 180 Ω is a trade and not an upgrade — see
+the table in `docs/wiring.md`.
 
 ## Tools
 
@@ -198,11 +204,17 @@ under `docs/captures/`. Older proof captures: `docs/captures/tx_with_pullup/`,
 
 ## What is still pending
 
-1. Change `R12` in `pcb/tools/design.py` from 1 kΩ to **240 Ω**, regenerate
-   schematic, place/route `R12` on the PCB, re-export gerbers. Update
-   `docs/perfboard.md` assist table (22 µs is “too weak on this C”, not “wrong
-   part”) and `docs/wiring.md` (the “no bus pull-up closes the story” line is
-   stale). Write the TX finding into `docs/reverse-engineering.md`.
+1. ~~Change `R12` to 240 Ω, regenerate the schematic, fix the `perfboard.md`
+   assist table and the stale `wiring.md` fail-safe line, write the finding into
+   `reverse-engineering.md`.~~ **Done 2026-09-01.** `design.py` now specifies
+   `240R`; ERC 0, netlist matches, `check_libs` clean. `wiring.md` gained an
+   `R12` BOM line (`CRCW0603240RJNEA`), the pin map entry for GPIO5, a
+   *Transmitting on C/D* section, and a fourth "will bite" item; two inverted
+   claims about driving recessive were corrected there and in
+   `reverse-engineering.md` E2. `perfboard.md` carries the assist decoder.
+   **Still outstanding: place and route `R12` on the PCB and re-export gerbers.**
+   Also note GPIO5 used to be listed as the fallback amber-LED pin; that fallback
+   was moved to GPIO4.
 2. Strip bring-up diagnostics: `tx_no_ack`, `probe_tx_errors_`, per-500 ms TX
    status logs.
 3. **OTA rollback** before the board is sealed. USB flash is the path that
@@ -220,4 +232,3 @@ under `docs/captures/`. Older proof captures: `docs/captures/tx_with_pullup/`,
   CAN TX is abandoned on purpose. Fallback if needed: pulse **our** Open touch
   pad and let the PIC send the frame.
 - Another 1 kΩ-only door press. It will bus-off on this bus.
-)
