@@ -9,6 +9,11 @@ esphome/.piolibdeps/
 # Footprint preview renders (regenerate with kicad-cli fp export svg)
 pcb/libs/fp-svg/
 
+# Light pipe preview: scratch board and render, both regenerable.
+# See the recipe in pcb/tools/model_lightpipe.py.
+pcb/board/_lightpipe_preview.kicad_pcb
+mech/*.png
+
 # Local tooling
 .venv/
 __pycache__/

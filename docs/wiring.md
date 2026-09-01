@@ -500,9 +500,12 @@ the same part.
 
 That has a pleasant consequence: **a genuine CTS part is a drop-in replacement.** The boss
 holes are drilled to the listing's Ø0.9 mm, which takes the clone's 0.7 mm boss and CTS's
-0.8 mm equally, and the switch leads share the same 4.20 mm centres. If the cheap switch
-ever wears out, a distributor part with a ten-year availability guarantee solders straight
-onto the same land.
+0.8 mm equally, and both parts put their switch leads on the same 4.20 mm centres. If the
+cheap switch ever wears out, a distributor part with a ten-year availability guarantee
+solders straight onto the same land. Note the *pads* sit on 4.25 mm centres rather than
+4.20: they were trimmed inward-edge-only for hole clearance, so each pad's centre moved
+0.025 mm outward while its outer edge stayed put. Both parts' leads still land well inside
+the copper.
 
 **Do not trust the terminal numbers.** CTS numbers the switch contacts 1/2 and the linked
 frame 3/4; the clone numbers them the other way round. What is identical on both is the
@@ -1089,9 +1092,10 @@ the module SMD, without headers. The lesson generalises: pick the seating plane 
 the dominant planar face, not by taking the model's extreme.
 
 **`SW1` is done: `electra:SW_Push_Side_CTS_225B_7.8x3.5mm_Boss`.** Pads 1/2, the switch
-contacts, are **0.90 x 1.30 mm on 4.20 mm centres** with a 3.30 mm inner gap; the two `SH`
-frame pads are **1.45 x 0.90 mm on 6.75 mm centres**, a 5.30 mm inner gap and an 8.20 mm
-outer span; the boss holes are **Ø0.9 mm NPTH on a 2.30 mm pitch**. The origin is the
+contacts, are **0.85 x 1.25 mm centred at ±2.125, −0.925** — the drawing's 0.90 x 1.30 mm on
+4.20 mm centres, shortened 0.05 mm on each axis for hole clearance, outer edges unmoved; the
+two `SH` frame pads are **1.45 x 0.90 mm on 6.75 mm centres**, a 5.30 mm inner gap and an
+8.20 mm outer span; the boss holes are **Ø0.9 mm NPTH on a 2.30 mm pitch**. The origin is the
 **part centre**, so the 6.9 x 3.0 mm body sits symmetrically about it and the boss holes fall
 **0.15 mm below** it. The switch note above covers why this part and why the bossed variant.
 
@@ -1107,17 +1111,33 @@ PDF as **vector geometry** instead of measured off a raster scan: the hole pitch
 reconciled to three decimal places. The two sources agree to within **0.05 mm everywhere**,
 which is what establishes that the unbranded part really is this form factor — and it means a
 **genuine CTS part still drops in**, its 0.8 mm bosses entering these 0.9 mm holes and its
-switch leads landing on the same 4.20 mm centres. Only its frame leads run wider, 8.30 mm
+switch leads landing on the same 4.20 mm lead centres. Only its frame leads run wider, 8.30 mm
 against 8.20, overhanging the pad end by 0.05 mm, which is nothing on a hand-soldered
 gull-wing. Reading the vectors also settled the listing drawing's one real ambiguity: its
 `4.2` is **centre-to-centre**, not the outer span it looks like, which is why
 `3.3 + 0.9 + 0.9` never added up to its stated `5.3`.
 
-**Copper-to-hole-wall clearance is 0.190 mm** at pad 1, and it is worth recording that this
-is normal rather than marginal, because it looks alarming next to a 0.2 mm rule of thumb. A
-bossed side-push is inherently cramped — the bosses have to sit between the two pad rows —
-and KiCad's own stock library ships the class tighter: **0.075 mm** on the Alps `SKRTLAE010`
-and **0.175 mm** on the CK `KMS2xxGP`. Silkscreen is held 0.24 mm off the copper.
+**Copper-to-hole-wall clearance is 0.261 mm** at pads 1 and 2, after a trim made on
+1 Sep 2026 while checking the board against the fab's quote page. A bossed side-push is
+inherently cramped — the bosses have to sit between the two pad rows — and KiCad's own stock
+library ships the class tighter still: **0.075 mm** on the Alps `SKRTLAE010` and **0.175 mm**
+on the CK `KMS2xxGP`. Silkscreen is held 0.24 mm off the copper.
+
+**Drawn to the raw land pattern it was 0.190 mm, and that needed fixing rather than
+excusing.** An earlier revision of this section argued the figure was normal for the class,
+which is true and was beside the point: 0.190 mm is inside KiCad's own default 0.25 mm
+hole-clearance rule and inside the **0.254 mm hole-to-copper minimum JLCPCB publishes**, so it
+required two DRC exclusions and invited an engineering query on a board that was one click
+from being ordered. Worse, the exclusions made `kicad-cli pcb drc` report zero violations,
+so the board looked clean while carrying a known out-of-spec dimension.
+
+The fix exploits the fact that the closest approach is **diagonal** — hole centre to the
+pad's inner corner, 0.5 mm across and 0.4 mm along. Taking 0.05 mm off *each* axis therefore
+buys more clearance than taking 0.075 mm off either one alone, and it costs less pad. The
+outer pad edges, where the gull-wing toe lands and the fillet forms, did not move at all.
+The holes were deliberately **not** shrunk: at Ø0.9 mm they clear the part's 0.8 mm bosses by
+only 0.1 mm in total, and a part that seats matters more than a spacing that measures well.
+Both exclusions are now deleted, so DRC reporting zero means zero.
 
 The boss holes have **size equal to drill**, so they carry no annular ring and their copper
 layer set cannot affect what gets fabricated. It is spelled `*.Cu` rather than `F&B.Cu`
@@ -1149,14 +1169,138 @@ supported the 4/5-as-NC reading; it did, and it was wrong, which is why this che
 gated on a meter rather than on anyone's reading of a drawing.
 
 The fix is in: `SPK_SW` moved to pins 2/7 in `design.py`, pins 4/5 to the no-connect list,
-the PCB rerouted through the coil-end row, and the gerbers regenerated — the zip dated
-**2026-08-23-relayfix** is the only one to upload; the 2026-08-20 zip was destroyed.
-De-energised now genuinely means speaker connected.
+the PCB rerouted through the coil-end row, and the gerbers regenerated. The 2026-08-20 zip
+was destroyed; the `2026-08-23-relayfix` zip carried the fix, and has since been superseded
+in turn by **`v0.9`** once `R12` was placed — see [Fabrication](#fabrication) for which file
+to upload. De-energised now genuinely means speaker connected.
 
 Both poles are wired in parallel on purpose — it halves contact resistance and adds
 redundancy on a low-level audio signal. The trade is deliberate: a contact that fails to
 open breaks Silent mode, which merely means you hear the ring, whereas a contact that fails
 to close would break the intercom.
+
+## Fabrication
+
+**Upload `pcb/gerbers/electra-intercom-gerbers-v0.9-2026-09-01.zip`.** Every earlier zip is
+superseded: the 2026-08-20 one predates the relay contact fix, and `2026-08-23-relayfix`
+predates `R12`, without which the node can receive but cannot transmit. The board carries
+`v0.9` on the front silkscreen so a bare board can be identified later without opening a
+gerber viewer.
+
+Board is **54.5 x 47.0 mm**, 2 layers, and the exported set is F.Cu, B.Cu, both masks, both
+pastes, both silkscreens, Edge.Cuts, plus separate PTH and NPTH Excellon drills.
+
+| Option | Choose | Why this and not the default |
+|---|---|---|
+| Layers | **2** | Decided deliberately. `F.Cu` routes and pours, `B.Cu` is a solid ground plane. Nothing on this board runs fast enough to need more |
+| Thickness | **1.6 mm** | Not just the default. `SW1` is a *side*-push button, so pressing it loads the board edge-on; a 1.0 mm board would flex and rob the plunger of its few tenths of a millimetre of travel |
+| Copper | **1 oz / 35 µm** | Peak draw is ~28 mA average plus a 9 mA relay coil. Heavier copper buys nothing and widens the minimum trace the fab will accept |
+| **Surface finish** | **ENIG** | See below. This is the one option worth paying for |
+| Solder mask | **green** | Not aesthetics — contrast. Every joint on this board is placed and inspected by hand, including SOT-23-5 and 0.5 mm `J1`/`J3` pads, and black mask makes bridges genuinely hard to see under magnification. The board is sealed inside a wall unit where nobody ever looks at it |
+| Silkscreen | white, any process | Minimum stroke width is 0.15 mm and every text item on the board now meets it, including `v0.9`, which was 0.10 mm until it was corrected |
+| Confirm production file | **yes** | Worth a day's delay on the first run of a board carrying three hand-drawn footprints and five non-plated holes, so their interpretation of the `SW1` bosses and the `J2` relief holes can be seen before copper is etched |
+| Via covering | **tented** | 101 vias sit inside the ground pours, several close to pads. Untented invites solder wicking during hand assembly |
+| Electrical test | **flying probe** | Standard, and worth having. It is also one of the things ENIG makes dependable, since probing bare or lightly oxidised copper is what gives false readings |
+| Impedance control | **no** | 11,364 bps. The bus's own ~70 nF dwarfs anything the stackup does |
+| Castellation, edge plating | **no** | Nothing on the board edge is a contact |
+| Process tier | **cheapest standard** | Minimum track is 0.20 mm and every via is a 0.30 mm drill, comfortably inside the low-cost tier. Do not pay for a fine-feature process |
+
+### Why ENIG and not OSP
+
+OSP is usually the free option and it is a perfectly good finish — for a board that is
+machine-assembled in one reflow pass shortly after it is fabbed. It is not a metal finish
+at all, but a thin organic coating over bare copper that is largely consumed by the first
+heat cycle. This board breaks every assumption behind that:
+
+- **Assembly is by hand, in sessions, with hot air.** Every thermal excursion eats coating,
+  and reworked areas solder measurably worse the second time. Rework is likely here: the
+  relay contacts were already wrong once, and `SW1`'s land pattern is drawn from an
+  AliExpress dimension drawing that still needs a caliper against the delivered part.
+- **`J2` is wires hand-soldered into plated holes**, plausibly at final install, months
+  after the board arrives and after it has been handled. Skin oils degrade OSP, and
+  degraded OSP looks exactly like good OSP — both are bare copper.
+- **This board gets probed constantly.** The entire transmit investigation ran on meter
+  readings: GPIO5-to-`C/D` resistance, rail checks, relay continuity. Lightly oxidised
+  copper gives intermittent readings, which is precisely the class of false signal that
+  already cost a day on the flying-lead rig.
+- **Spares will sit.** OSP's shelf life is roughly six months in the sealed bag and less
+  once opened; boards two through five of an order may wait a year or more.
+
+Against that, OSP offers cost and flatness. ENIG matches the flatness — which the 0.5 mm
+pads on `J1` and `J3` do care about — and cost is the axis this project has consistently
+decided against everywhere else.
+
+The real arguments against ENIG are price and **"black pad"**, a nickel-corrosion defect
+that produces joints which pass inspection and fail later. It is a process-control problem,
+so order from a fab with a reputation to lose. ENIG's slightly more brittle intermetallic is
+irrelevant to something screwed down once behind a wall plate.
+
+**If ENIG is unavailable, fall back to lead-free HASL, not OSP** — robust, shelf-stable and
+forgiving to hand-solder, at the cost of pad flatness, which makes `J1` and `J3` fussier but
+not unworkable. **Do not take leaded HASL.**
+
+### The stencil
+
+Ordered with the board, 1 Sep 2026. Every option below was chosen against a measured
+property of the layout rather than a default, using `pcb/tools/vfy_stencil.py`.
+
+| Option | Choose | Why |
+|---|---|---|
+| Stencil side | **top only** | All **40** footprints are on the front; nothing is on the back. A bottom stencil would be pure waste |
+| Framework | **no** | Frameless suits hand printing one small board. Framed stencils exist for printers, and cost and weigh far more |
+| **Dimensions** | **custom, ~150 x 120 mm** | Not a standard size — see the sizing note below. This is the single option that changes what you pay |
+| Thickness | **0.10 mm**, or let the fab choose | Release is not the constraint — see the area ratios below. Bridging is, and the binding number is the **0.350 mm** gap between `U1` pins 1 and 2, the tightest different-net spacing on the board. Thinner deposits less paste; hand printing already deposits more than a machine. JLCPCB's no-extra-cost thicknesses are 0.10, 0.12, 0.15, 0.18 and 0.20 mm, so 0.10 is free to ask for |
+| Nano-coating | **no** | Only earns its price when area ratios approach the release limit. Ours are nowhere near it |
+| Polishing | **sanding** | Same reason. Electropolishing smooths aperture walls to help marginal apertures release |
+| Fiducials | **none** | Stencil fiducials align against matching marks in the board's copper, and this board has none. They would be decoration |
+| Step stencil, engraved text | **no** | A step stencil varies aperture depth across the board, which nothing here needs. Engraving only helps tell multiple stencils apart |
+
+**The area ratio is what makes most of those answers easy.** It is aperture opening area
+divided by aperture wall area, and below roughly **0.66** paste starts staying in the
+aperture instead of landing on the pad. The smallest aperture on this board is `U1` at
+**0.600 x 1.325 mm**:
+
+| Stencil thickness | Area ratio at `U1` |
+|---|---|
+| 0.08 mm (surcharged) | 2.58 |
+| **0.10 mm** | **2.06** |
+| 0.12 mm | 1.72 |
+| 0.15 mm | 1.38 |
+
+Three times the margin at every thickness offered, which is why the two upgrades sold to
+improve release — nano-coating and electropolishing — buy nothing here.
+
+**One check worth repeating if the layout ever changes.** There are **111** paste apertures
+and **none of them sits on a drilled pad**, which is correct: paste over a hole falls
+through it. That is what keeps `J2`'s plated wire holes and `SW1`'s boss holes bare, and
+both of those are hand-soldered by design.
+
+### Sizing the stencil, which is where the money is
+
+**Do not take a standard size.** The 380 x 280 mm preset is listed at **0.8 kg** for a
+54 x 47 mm board, and almost none of that is stencil: 380 x 280 mm of 0.10 mm steel is about
+**84 g**. The rest is packaging, because JLCPCB boxes anything over 250 x 250 mm in cardboard
+clamped between **wooden boards**, while anything at or under 250 x 250 mm goes in a plastic
+bag with a light air-shipping box. A stencil under 280 x 280 mm also ships *with* the PCBs
+rather than separately. So the sheet you actually want is a custom outline.
+
+Frameless custom sizes are supported down to very small outlines — JLCPCB's frameless
+pricing starts at $3 for 100 x 100 mm and they list "1:1 as PCB" as a valid custom entry — so
+the 45 mm border implied by the standard models (380 x 280 has a 290 x 190 valid area) is a
+property of those presets, not a constraint to design around.
+
+**~150 x 120 mm is the recommendation**, giving roughly 48 mm of border on the long axis and
+36 mm on the short. Border is not waste: it is where the sheet gets taped down, and where the
+squeegee starts and stops clear of the apertures, which matters much more when printing by
+hand than with a machine. 100 x 100 mm hits the price floor but leaves only ~23 mm of
+squeegee run-up. At 150 x 120 mm the steel weighs about 14 g.
+
+Worth checking before ordering: a **new-user stencil coupon** covers the full stencil cost at
+any size up to 380 x 280 mm. If it applies the price argument disappears, but the weight
+argument does not, so order small regardless.
+
+**Ordering a stencil changed the assembly order**, because a printed board cannot be
+populated in stages. See [Assembly order](#assembly-order).
 
 ## Power architecture
 
@@ -2095,36 +2239,62 @@ reasoning in [Transmitting on C/D](#transmitting-on-cd-and-why-it-did-not-work-a
 
 ## Assembly order
 
-Each step is safe alone and verifies one thing. Do not skip ahead.
+**This order was rewritten on 1 Sep 2026, when a stencil was ordered with the board.**
+The previous version populated the circuit in stages — receive path only, then the
+transmit buffer, then the assist — and checked after each. That is the right way to build
+by hand, and it is impossible from a printed board: paste sits on every pad at once, and
+any pad left unpopulated through reflow just grows a solder ball.
 
-1. **Flash the ESP32 first, on USB alone.** Nothing else connected. Confirm it boots,
-   joins WiFi and appears in Home Assistant. Everything after this can go over OTA,
-   which is why this step comes first.
-2. **Check the regulator, in isolation.** Verify `+U` polarity at the terminal block
-   (the D24V10F3 has no reverse-voltage protection), then feed the regulator with
-   nothing on its output and measure `VOUT`. It should read 3.3 V ±4%. Only then
-   connect it to the SuperMini's `3V3` pin — **and unplug USB before you do.**
-3. **RX only.** Fit the 1 k, the clamp and the wire to `C/D`. Leave the TX buffer out
-   entirely. Ring the panel and confirm the log shows `0x0DF` `04 03 01 00` and then
-   `04 04`, matching the analyzer captures, with "Bus errors" staying at zero. This is
-   the bit-timing test.
-4. **Add the TX buffer, then stop.** Fit the buffer *and its pull-up*. Before
-   transmitting anything, confirm `C/D` still idles at 3.3 V and that the intercom
-   still works completely normally — calls, answer, door, screen. This proves the
-   node is electrically invisible. Run **TX path self-test**, which should PASS.
-5. **Fit `R12` and run Assist self-test — before sending anything.** Assist OFF should
-   read ~44 µs and ON in the single digits of microseconds. Anything near 22 µs means
-   the assist is too weak for this bus and the frame will bus-off; ~2000 µs means `C/D`
-   is not really connected. Decoder table in `docs/perfboard.md`.
-6. **Transmit.** Press "Open door" with the line idle, and only once step 5 passed. It
-   unlocks the building door, so know who is on the other side of it.
-7. **Relay last.** Fit the JST adapter, arm Silent, ring, confirm silence, then answer
-   and confirm you can hear.
-8. **Mode button, on the bench without the button.** `SW1` only exists on the PCB, but
-   the firmware side tests now: the pull-up is on the board, so **momentarily shorting
-   GPIO10 to GND with a jumper wire is a press**. Confirm each one advances the state and
-   that the status LED follows. Worth doing before the PCB exists, because it is the
-   cheapest time to find out the state machine does the wrong thing.
+Nothing is lost, because staging was never really about population. Its purpose was to
+keep a half-built board from disturbing a bus the whole building depends on, and that is
+governed by **when `C/D` is connected**, not by when parts are placed. So the gate moves:
+one reflow populates everything, then the same checks run in the same order, with the
+intercom connection held back until each has passed. Steps 1-4 all happen with `C/D`
+disconnected.
+
+Each step still verifies one thing. Do not skip ahead.
+
+1. **Inspect before applying any power.** Under magnification, look for bridges at the
+   three tightest places: `U1` pins 1-2, whose 0.35 mm gap is the closest spacing between
+   different nets anywhere on the board, then `U2`, then the `J1`/`J3` pin rows. Then meter
+   for shorts on `3V3`-to-`GND`, `VIN`-to-`GND`, and `C/D` to either rail. A reflowed board
+   is the one moment when a solder bridge is both most likely and cheapest to find.
+2. **Confirm the relay fail-safe on the built board.** With the coil unpowered, meter
+   continuity from `J2` pin 1 through to `J3` pin 1 — the speaker path must be **closed**.
+   This is the check that caught a fail-dangerous error once already, and reflow is a new
+   chance to get `K1` rotated 180°.
+3. **Power from a bench supply, current-limited — not from the intercom.** The old step
+   measured the regulator with its output disconnected, which a populated board no longer
+   allows, so limit the current instead: feed `VIN` at about 13.5 V with the supply's limit
+   set near 100 mA. Verify the `3V3` rail reads 3.3 V ±4%, confirm the supply is not sitting
+   at its limit, and check nothing is getting hot. Verify `+U` polarity before this, at the
+   terminal block.
+4. **Flash over USB, with the bench supply off.** **Never feed USB 5 V and the regulator
+   at once.** Confirm it boots, joins WiFi and appears in Home Assistant. Everything after
+   this could in principle go over OTA — but see the OTA note: on this project OTA has
+   reported success while continuing to boot the previous image, and USB flashing at
+   offset 0 is the path that actually takes.
+5. **Exercise everything that does not need the bus, still with `C/D` disconnected.**
+   `SW1` is a real button now rather than a jumper across GPIO10, so press it and confirm
+   each press advances the state and the status LED follows. Arm Silent and listen for the
+   relay. Run **TX path self-test**, which needs no bus and should PASS. Run **Assist
+   self-test** too: with `C/D` disconnected it should report **~2000 µs**, which is the
+   documented not-connected signature and confirms the test itself is working before you
+   rely on it later.
+6. **Connect `C/D`. Listen only.** Ring the panel and confirm the log shows `0x0DF`
+   `04 03 01 00` and then `04 04`, matching the analyzer captures, with "Bus errors" staying
+   at zero — this is the bit-timing test. Then confirm the intercom still works completely
+   normally: call, answer, door, screen. That is what proves the node is electrically
+   invisible, and it is the check the whole staged approach existed to protect.
+7. **Assist self-test on the live bus, before transmitting anything.** OFF should read
+   ~44 µs and ON in the single digits of microseconds. Near 22 µs means the assist is too
+   weak for this bus and the frame will drive the controller bus-off. Decoder table in
+   `docs/perfboard.md`.
+8. **Transmit.** Press "Open door", line idle, and only once step 7 passed. **It unlocks
+   the building door**, so know who is on the other side of it.
+9. **Speaker path last.** Fit the `J2` lead and the `J3` plug, arm Silent, ring, confirm
+   silence, then answer and confirm you can hear. This goes last because it is the only
+   step that touches the intercom's own wiring.
 
 ## Permanent install
 
