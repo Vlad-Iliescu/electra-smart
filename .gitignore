@@ -14,6 +14,9 @@ pcb/libs/fp-svg/
 pcb/board/_lightpipe_preview.kicad_pcb
 mech/*.png
 
+# STEP assembly export, regenerate with the recipe in pcb/tools/vfy_height.py
+/board_asm.step
+
 # Local tooling
 .venv/
 __pycache__/
