@@ -245,8 +245,13 @@ under `docs/captures/`. Older proof captures: `docs/captures/tx_with_pullup/`,
    fix: give every board its first flash as a factory image at offset 0 over USB,
    OTA after that, and confirm the compile stamp on the node instead of believing
    the uploader.
-4. Older assembly: J2 wire OD, speaker fit-test, JST calipers, SW1 plunger,
-   optional 12 V coil confirm.
+4. Older assembly: JST calipers, SW1 plunger, optional 12 V coil confirm — plus
+   `J2`'s wire OD, which is now **the factory speaker lead** rather than our silicone,
+   because the ~~speaker fit-test~~ **failed on 2026-09-07**. The kit header will not
+   seat on the intercom's plug (contacts aligned, housing did not), so the desolder
+   fallback is the built arrangement and `J2` gets a lead thinner than the `OD1.5mm`
+   relief the boards were fabricated with. Caliper it and sleeve it with heat-shrink
+   if it comes in under ~1.4 mm.
 5. User confirmation that the 2026-08-28 open actually moved the lock.
 
 ## Do not redo

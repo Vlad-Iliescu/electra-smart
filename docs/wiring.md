@@ -4,15 +4,18 @@ Bench prototype for the Electra Touch Line `VTM.3S402.ELB04` -> Home Assistant n
 Protocol background is in [reverse-engineering.md](reverse-engineering.md); firmware
 is in [../esphome/](../esphome/).
 
-**Guiding principle: nothing on the intercom gets cut, desoldered or permanently
-altered.** Power and bus come off screw terminals that are already there, and the
-speaker intercept is a plug-in adapter. Everything is reversible by unplugging.
+**Guiding principle: nothing on the intercom's board gets cut, desoldered or permanently
+altered.** Power and bus come off screw terminals that are already there. Everything on the
+intercom side is reversible by unplugging.
 
-The one place this may have to bend is the speaker, and only if the intercom's 1.25 mm
-connector turns out to be a family the kit cannot mate. The [fallback](#if-the-factory-plug-does-not-mate)
-trades two solder joints on the speaker for certainty about the fit. It is opt-in at assembly
-time and does not change the board at all, so treat the principle as intact unless the
-fit-test says otherwise.
+**The speaker is the one place this bent, and it bent exactly where this document predicted
+it would.** The fit-test has since been run and **failed**: the kit's header will not mate the
+intercom's speaker plug. So the [fallback](#if-the-factory-plug-does-not-mate) is no longer
+opt-in — it is the built arrangement, and two solder joints move onto the **speaker's own
+tabs**. The intercom's board is still untouched, the factory lead is still one intact piece,
+and its plug still sits in `J101`, so reverting to stock is resoldering two joints on a
+speaker rather than splicing a cable. Read the principle as holding everywhere except those
+two tabs.
 
 ## Where to buy (Romania)
 
@@ -73,8 +76,8 @@ section for which choices actually matter and which are theatre.
 | **D3** | 1 | **onsemi BAT54SLT1G** | SOT-23, *series* pair | Clamps the CAN RX pin to the rails. 30 V, 200 mA, Vf **0.32 V max at 1 mA**, Ct 10 pF. **If `SBAT54SLT1G` is also in stock take that instead** - leading `S` = AEC-Q101 + PPAP, same die, see note |
 | **LED1** | 1 | **`WS2812B`**, ideally `V6` | SMD single pixel, **3535 `MINI`** or 5050 | Status LED. **3.3-5.5 V, so in spec on our rail** - and `V6` specifically optimises constant-current drive at 3.3 V. **Not an `SK6812`** (3.5 V / 3.7 V) and **not `WS2812E`/`S`** (3.8 V). Take the `B` over the `C` for its internal cap and reverse-connection protection. **Not a distributor part**: AliExpress or similar, buy a handful and bench-check one - see the LED note |
 | **SW1** | 1 | **Side-actuated SMD tact switch, 7.8 x 3.5 x 3.8 mm, _with bosses_** | 4-pad gullwing + 2 locating bosses | Mode button. Functionally a **CTS `225BM...RB1(S)`**, whose datasheet supplied the land pattern. From the AliExpress assortment take **variant No.5** and make sure it is a *with points* version - the bosses are what carry the side press. **Not a distributor part**: buy the 50-piece lot, and see the switch note for why the bossed variant is not optional here |
-| **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** | board-mount | **The speaker's factory plug goes here** if it mates, and a plug crimped from the same kit if it does not. From the 10-set AliExpress kit; footprint is drawn from the vendor sheet, so **fit-test one against the speaker plug to settle the topology**, not the land pattern |
-| **J2** | 1 | **"JST 1.25" 2-pin housing + 2 terminals** | crimped, from the same kit | Flying lead from our board to the intercom's `J101`. **Crimped with the Engineer PA-09**, which is on hand - nothing extra to buy. Use the **28 AWG** end of the wire, not 26 - see the crimping note. The board end has no connector: the wires solder into plated holes with a feed-through strain relief, so nothing extra is needed there either |
+| **J3** | 1 | **"JST 1.25" 2-pin SMD vertical header** + housing + 2 terminals | board-mount + crimped, from the 10-set AliExpress kit | **A plug crimped from the same kit goes here**, on a new lead running to the speaker. The fit-test settled this: **the intercom's factory plug does not mate this family**, so the speaker gets a lead of our own on both ends. Mating a kit plug to a kit header makes the one remaining fit guaranteed by construction. **Crimped with the Engineer PA-09**, which is on hand - use the **28 AWG** end of the wire, not 26, see the crimping note |
+| **J2** | - | **no parts to buy** - the intercom's own **factory speaker lead** lands here | soldered, with a feed-through relief | Its far end is desoldered from the speaker and soldered into `J2`'s plated holes; the plug stays in `J101`, untouched. **Caliper this lead's insulation OD before threading it** - the board is fabricated with the `OD1.5mm` relief sized for our silicone 26 AWG, and a factory PVC lead is likely thinner. See the `J2` variant note for the sleeve-it-up fix, since the board can no longer be changed |
 | **F1** | 2 | **Littelfuse 0453.250MR** | 2410, 250 mA, 125 V | **In line with the `+U` tap, from the very first power-up.** Not just a PCB part - the hand-wired stage is when a mistake is most likely. Solder it inline between two wire ends; buy a spare |
 | **R4** | 1 | 10 k resistor `CRCW060310K0JNEA` | 0603 | **Mandatory** pull-up on CAN TX |
 | **R8** | 1 | 10 k resistor, same part as R4 | 0603 | Base-to-emitter on `Q2` - see the Vces note |
@@ -90,7 +93,7 @@ section for which choices actually matter and which are theatre.
 | **C6** | 1 | **Panasonic EEH-ZA1V470P** polymer hybrid | SMD V-chip, 47 uF, **35 V, 105 C 10000 h** | Bulk on `VIN` - see the LC-spike note, and why not an MLCC. The only wear-out part in the design, hence the hybrid |
 | **C8** | 1 | 10 uF ceramic | 1206 | On 3V3 next to `U3`, for WiFi bursts. **Same part as C1** (`CGA5L3X5R1H106M160AB`), so that part is **2 per board**. Its 50 V rating means almost no DC-bias derating at 3.3 V, so you get a true 10 uF |
 | **J1** | 1 | **"JST 1.25" 3-pin SMD vertical header** + housing + 3 terminals | board-mount, from the **3P** variant of the same kit | `+U`, `C/D`, `GND` tap. Same family as `J2`/`J3`, so one crimp tool and one technique covers every connector on the board. **The 3P variant is a separate order**: the listing sells one pin count per purchase, so the 2P order that covers the speaker end does not include these |
-| - | - | 26-28 AWG silicone wire | | Thin and flexible; there is not much room |
+| - | - | 26-28 AWG silicone wire | | Thin and flexible; there is not much room. Now carries the **`J3`-to-speaker** lead as well as `J1`, so allow a generous length for it: unlike the factory lead this one is ours to cut, and slack here is free |
 | - | - | Kapton tape, heat-shrink | | Insulating the install |
 | - | - | 2 mm end-glow PMMA fibre | + opaque heat-shrink | Light pipe to the case face (later) |
 
@@ -217,13 +220,16 @@ Still outstanding:
 | `U3` | ESP32-C3 SuperMini (bench), `ESP32-C3-MINI-1` (PCB) | Owned / later |
 | - | 26-28 AWG silicone wire, Kapton, heat-shrink, 2 mm PMMA fibre | Consumables |
 
-**The AliExpress 1.25 mm kit covers both speaker connectors outright.** The *2P, SMD
-Vertical* variant is a board-mount header plus housings and loose terminals, which is exactly
-what the arrangement below needs. The vertical header becomes `J3` and **the speaker's own
-factory plug mates straight into it**, so nothing is crimped on the speaker side at all; the
-`J101` end is a housing and two terminals crimped onto a flying lead, and **the Engineer
-PA-09 needed for that is already on hand**. See the speaker connector section for the fit-test
-that decides how the speaker gets attached.
+**The AliExpress 1.25 mm kit covers the speaker end outright.** The *2P, SMD Vertical*
+variant is a board-mount header plus housings and loose terminals, which is exactly what the
+arrangement below needs. The vertical header becomes `J3`, and a housing plus two terminals
+crimped from the same kit becomes the plug on the new speaker lead — **the Engineer PA-09
+needed for that is already on hand**. Only one connector gets made, and because both halves
+come out of the same bag its fit needs no identifying.
+
+The kit does **not** mate the intercom's speaker plug — that was fit-tested and failed. It
+does not need to: under the arrangement below the factory plug never leaves `J101`, so no part
+of this BOM has to mate anything of the intercom's.
 
 **`J1` uses the same family in its 3-way form, and that is a second order to place.** The
 listing sells one pin count per purchase, so a 2P order covers the speaker end only and contains
@@ -244,9 +250,11 @@ pitch), where GH adds 4.5 mm and PicoBlade 6.4 mm. So the part is an **SH-shaped
 scaled to a 1.25 mm pitch**, which is exactly the "LiPo balance lead" clone the section above
 warns about, and it is unlikely to intermate with either genuine family.
 
-That has a consequence beyond the footprint: it makes the fit-test against the intercom a
-genuine coin-flip rather than a formality, so the [fallback](#if-the-factory-plug-does-not-mate)
-is now the more probable path rather than a contingency.
+That had a consequence beyond the footprint, and it proved correct: it made the fit-test against
+the intercom a genuine coin-flip rather than a formality, and the coin landed on failure. The
+[fallback](#if-the-factory-plug-does-not-mate) is the built arrangement. Reading the kit's
+proportions off its own datasheet is what let that be anticipated and designed around before the
+boards were ordered.
 
 > **Trap in that datasheet, for whoever reads it next.** Both its drawings and its photo bracket
 > the *outermost* span and label it "A", which invites you to read A as the overall length. It is
@@ -293,37 +301,44 @@ small enough that losing or cooking one is a matter of when, not if.
 
 ### The speaker connector
 
-**The speaker plugs into our board, and our board reaches back to `J101` on a flying
-lead.** Earlier drafts had this as a cut-in-half extension cable with the relay contact
-spliced into one conductor. The revised arrangement is better in every respect:
+**Settled by measurement: the factory plug stays in `J101`, its lead is desoldered from the
+speaker and soldered to our board, and a new lead of our own runs from `J3` to the speaker.**
+The [fit-test](#the-test-that-decided-the-topology) rejected the plug-in arrangement, so the
+[fallback](#if-the-factory-plug-does-not-mate) below is the built one and carries the full
+reasoning. **The board is unaffected** — `J3` is the kit's own header either way, which is
+precisely why the layout was never blocked on this.
+
+The relay's place in the chain is identical under both arrangements, and it is the part that
+matters electrically:
 
 ```
-   intercom J101 (male header)
+   intercom J101 (male header)  <-- factory plug never leaves here
         |
-        |  J2 = 2-pin female housing, terminals crimped with the PA-09,
-        |       free wire ends soldered to our board
+        |  the speaker's own factory lead, desoldered at the speaker end
         v
+   J2 = that lead's two wires, soldered into our board's plated holes
+        |
    [ OUR BOARD ]   relay K1 pole 1 sits in ONE conductor as a PCB trace:
         |            J2 pin 1 --> COM,  NC --> J3 pin 1,  NO unused
         |            J2 pin 2 -----------------> J3 pin 2 straight through
         v
    J3 = 2-pin JST 1.25 SMD vertical header on our board
-        ^
         |
-   the speaker's own factory plug
+        |  a NEW lead, both ends ours: kit housing crimped with the PA-09
+        v
+   soldered to the speaker's terminals
 ```
 
-Four things this buys. **No crimping on the speaker side** — the speaker keeps its factory
-plug and simply moves from `J101` to our `J3`. **The relay contact becomes a PCB trace**
-rather than a hand-splice in a thin cable, which removes the least reliable joint in the
-whole build. **Only one connector needs making**, the `J101` end, and with the kit's
-housings and terminals plus the PA-09 that needs nothing bought. And **reversibility is
-unchanged**: pull our board out, plug the speaker's factory plug straight back into `J101`,
-and the unit is stock again.
+**What survives from the rejected arrangement is the thing worth keeping: the relay contact is
+a PCB trace, not a hand-splice in thin cable.** Earlier drafts had this as a cut-in-half
+extension cable with the contact spliced into one conductor, and that splice was the least
+reliable joint in the whole build. Routing the speaker pair through the board removed it, and
+that holds regardless of which end gets the connector.
 
-**Crimping notes, since the tool is on hand.** The PA-09 is the right choice for this pitch —
-it covers 0.1-0.5 mm² open-barrel terminals, which is precisely the JST SH/GH/PicoBlade
-range. Three things decide whether the joint is trustworthy:
+**Crimping notes, since the tool is on hand.** These now apply to the **`J3` end of the new
+speaker lead**, which is the only connector on the whole build that gets hand-made. The PA-09
+is the right choice for this pitch — it covers 0.1-0.5 mm² open-barrel terminals, which is
+precisely the JST SH/GH/PicoBlade range. Three things decide whether the joint is trustworthy:
 
 - **Use 28 AWG, not 26.** Generic "JST 1.25" terminals take roughly 28-32 AWG. Genuine JST
   GH stretches to 26, but on a no-name terminal 26 AWG risks a barrel that will not close
@@ -336,27 +351,45 @@ range. Three things decide whether the joint is trustworthy:
   clean closed barrel. This joint ends up sealed inside a wall, which is the wrong place to
   discover a weak crimp.
 
-Two consequences to design around. Our board now carries the speaker's mechanical strain,
-so it needs securing rather than just being tucked in. And the speaker pair now crosses the
-PCB, so **route it as a pair, away from `L1` and the `SW` node** — the pair is low impedance
-and driven by an amplifier so it is not especially susceptible, but there is no reason to
-run audio under a 1.1 MHz switching node.
+Two consequences to design around, and these hold under either arrangement. Our board carries
+the speaker's mechanical strain, so it needs securing rather than just being tucked in. And the
+speaker pair crosses the PCB, so **route it as a pair, away from `L1` and the `SW` node** — the
+pair is low impedance and driven by an amplifier so it is not especially susceptible, but there
+is no reason to run audio under a 1.1 MHz switching node.
 
-**The one test that decides the topology.** 1.25 mm is not a single family:
-genuine JST GH, Molex PicoBlade and the cheap "JST 1.25" sold for LiPo balance leads share
-the pitch but differ in latch and polarisation, and **do not reliably intermate**. This now
-matters more than it used to, because the speaker's factory plug has to mate with *our*
-header rather than with a bought cable. There are ten sets in the kit, so **take one
-vertical header and try the speaker's plug on it by hand.** If it seats and latches, the plug-in
-arrangement above stands. If it does not, **do not go hunting for the matching family** — take the
-fallback below instead, which needs no new parts and no identification at all. Either way the
-footprint is unaffected, because `J3` is the kit's own header in both arrangements.
+#### The test that decided the topology
 
-Expect this one to fail, incidentally. The vendor sheet shows the kit is an SH-proportioned clone
-rather than genuine GH, so it will only mate the intercom if the intercom uses the same clone
-family — plausible for a Chinese-built unit, but no better than a coin-flip.
+**Run, and it failed — the kit will not mate the intercom's speaker plug.** So the
+[fallback](#if-the-factory-plug-does-not-mate) is the built arrangement. What follows is kept
+because *how* it failed is the useful part.
 
-And confirm the pitch itself first, since the ~1.08 mm pin-centre reading was never
+1.25 mm is not a single family: genuine JST GH, Molex PicoBlade and the cheap "JST 1.25" sold
+for LiPo balance leads share the pitch but differ in latch and polarisation, and **do not
+reliably intermate**. That is exactly what was observed. **The contacts lined up and the
+housing refused to seat** — the pin rows registered against each other, so the pitch is right
+and the family is not. Nothing about the pitch was wrong; the shroud and latch geometry differ.
+
+**Record it that way, because the failure mode is easy to misread as a pitch error** and send
+the next person off to re-buy a kit in 1.0 mm or 1.5 mm. It is not a pitch error. The pitch is
+confirmed correct in both directions: the kit header also measured **1.250 mm pitch and
+3.200 mm anchor span** against `J3`'s land pattern, so the board is right and the only
+incompatibility is plug-to-header between two different 1.25 mm families.
+
+**Do not go hunting for the matching family, and do not shave either housing to force a mate.**
+Identifying the intercom's exact family would mean another order and another guess, and a plug
+retained by a modified shroud is precisely the joint that goes intermittent years into a
+permanent install in shared building wiring. The fallback needs no new parts and no
+identification at all.
+
+The prediction held, for the record: the vendor sheet showed the kit was an SH-proportioned
+clone rather than genuine GH, so it was only ever going to mate the intercom if the intercom
+used the same clone family. It did not.
+
+The rest of this subsection is now **history rather than instruction** — it was written to
+identify the intercom's connector, which the fallback makes unnecessary. It is kept because the
+correction in it is a genuine trap.
+
+Confirm the pitch itself first, since the ~1.08 mm pin-centre reading was never
 conclusive — that is exactly the error you get with the caliper jaws inside the pin centres.
 Measure the **length of the header body on the intercom's board** instead, which is a far
 easier reading to take than a two-pin span. These are the real numbers for a 2-way header,
@@ -386,9 +419,9 @@ If it does turn out to be 1.0 mm SH, the kit is the wrong pitch outright and bot
 
 #### If the factory plug does not mate
 
-Worth reading *before* the unit is opened, because it changes what the fit-test means: a
-failure stops being a blocker and becomes a choice. **Reuse the factory plug where it already
-fits, and move the soldering to the speaker instead.**
+**It does not, so this is the built arrangement.** Written before the unit was opened, which is
+what turned the fit-test failure from a blocker into a decision already made. **Reuse the
+factory plug where it already fits, and move the soldering to the speaker instead.**
 
 ```
    intercom J101 (male header)
@@ -423,23 +456,37 @@ coil's tinsel lead is usually soldered to the same tab, and cooking it turns thi
 a replacement OEM speaker". Low temperature, quick in and out, add fresh solder to wet the
 joint rather than dwelling, and put no pull on the tab.
 
-**Check the factory lead reaches first**, because this flips which lead constrains board
-placement. In the plug-in arrangement the fixed-length factory lead spans our board to the
-speaker and our crimped lead can be any length; here the factory lead has to span `J101` to
-our board and the new lead is the flexible one. If it will not reach, the splice needed to
-extend it hands back the reliability this was bought for, and the plug-in arrangement is the
-better bet.
+**Check the factory lead reaches**, because this arrangement flips which lead constrains board
+placement. In the rejected plug-in arrangement the fixed-length factory lead would have spanned
+our board to the speaker while our crimped lead could be any length. Here it is the other way
+round: the factory lead has to span `J101` to our board, and the **new** lead is the flexible
+one. Measured at **roughly 10-15 cm**, which is comfortable for that span given both ends sit
+in the same cavity — but confirm it against where the board actually mounts, because the margin
+is only generous if the board does not end up far from `J101`.
 
-Serviceability is unchanged either way — pulling the board is still unplug at `J101`, unplug
-the speaker at `J3`, and the factory lead comes out still soldered to our board. That is also
-why `J3` stays a connector even though the speaker is being soldered anyway: that plug is what
-lets the board come out without touching the speaker a second time.
+**If it will not reach, the answer is to move the board, not to extend the lead.** Splicing the
+factory lead hands back exactly the reliability this arrangement was chosen to buy, and the
+plug-in arrangement is no longer available as an escape route — that is what the fit-test
+closed off. A fresh lead for the `J101` end is not an option either, since it would need a
+plug in the intercom's own unidentified 1.25 mm family, which is the unknown this whole
+arrangement exists to avoid.
 
-**The board is identical under both arrangements**, which is what makes this safe to defer.
-`J3` is the kit's header in either case — if the kit mates the factory plug the plug-in
-arrangement works, and if it does not this one does — so the footprint is a superset and the
-layout is not blocked on the fit-test at all. The decision to desolder can be made later, with
-the unit open and the parts in hand.
+**Why the new lead should be cut long.** It is the only length in the chain that is freely
+ours, so slack belongs here rather than anywhere else. Dress it clear of the relay end of the
+board instead of pulling it taut across it.
+
+Serviceability is unchanged from the plug-in arrangement — pulling the board is still unplug at
+`J101`, unplug the speaker at `J3`, and the factory lead comes out still soldered to our board.
+That is also why `J3` stays a connector even though the speaker is being soldered anyway: that
+plug is what lets the board come out without touching the speaker a second time.
+
+**The board is identical under both arrangements, and that is what made deferring the decision
+safe** — a bet that has now paid. `J3` is the kit's header in either case, so the footprint was
+a superset of both outcomes and the layout was never blocked on the fit-test. The boards were
+ordered and fabricated before the test was run, and the failure cost nothing but a change of
+plan. The one thing the choice does touch on the board is `J2`'s strain-relief size, covered in
+the `J2` variant note — and because that was fabricated on the plug-in assumption, it is the
+single loose end the fit-test failure leaves behind.
 
 ### The board end of the speaker lead
 
@@ -999,14 +1046,26 @@ otherwise-tempting `0.127sqmm` variant assumes 1.0 mm insulation and would have 
 relief hole too tight to thread. Its 9 mm relief spacing is the datasheet bend radius of
 3x the outer diameter, taken twice.
 
-**Which variant is right depends on which speaker arrangement wins**, and it is the one thing
-that choice touches on the board. The `OD1.5mm` size assumes *our* silicone-clad 26 AWG. Under
-the [fallback](#if-the-factory-plug-does-not-mate), `J2` carries the intercom's **factory**
-lead instead, which is likely thinner PVC nearer 1.0-1.2 mm, and a wire that rattles around in
-its relief hole is barely strain-relieved at all. If it measures near 1.0 mm, switch to
+**This variant is the one loose end the fit-test failure left, and it cannot be fixed at fab
+any more.** The `OD1.5mm` size assumes *our* silicone-clad 26 AWG, which is what the plug-in
+arrangement would have put here. The [fallback](#if-the-factory-plug-does-not-mate) won instead,
+so `J2` now carries the intercom's **factory** lead — likely thinner PVC nearer 1.0-1.2 mm — and
+a wire that rattles around in its relief hole is barely strain-relieved at all. The boards were
+already ordered with the `OD1.5mm` geometry, so the mismatch has to be closed at the wire rather
+than at the hole.
+
+**Caliper the factory lead's insulation OD, then build it up to fit rather than leaving it
+loose.** A short sleeve of thin-wall heat-shrink over the section that passes through the
+Ø2.0 mm relief holes brings a 1.0-1.2 mm lead up to something the hole actually grips, and it
+adds a second benefit: the shrink takes the abrasion at the hole edge instead of the factory
+insulation. Shrink it in place before threading, and keep it clear of the solder holes so it
+cannot wick.
+
+For reference, had this been caught before fab the answer would have been
 `SolderWire-0.127sqmm_1x02_P3.7mm_D0.48mm_OD1mm_Relief`: Ø1.5 mm relief, the same Ø0.7 mm
-plated pads, and 3 mm shorter into the bargain. So caliper whichever wire will actually land
-here, not the spool on the shelf.
+plated pads, and 3 mm shorter into the bargain. Worth knowing for a future revision — and worth
+noting as the concrete cost of ordering boards before running the fit-test, which was otherwise
+the right call.
 
 It costs a **7 x 12 mm strip** of board, which sounds like a lot until you notice most of it
 is empty laminate: the only features are four holes. Tracks may run through the middle, and
@@ -1078,10 +1137,13 @@ real reason to prefer a connector over solder pads is service: it lets the board
 from power and bus without touching the intercom's screw terminals, which matters most during
 bring-up when the regulator is being checked in isolation.
 
-Measuring `J101`'s housing is still needed, but it was never a blocker for `J2` as this
-document previously implied. That measurement decides which **plug** to crimp for the `J101`
-end; it says nothing about where the other ends of the wires land on our board, and those are
-independent choices.
+Measuring `J101`'s housing is **no longer needed at all.** It was never a blocker for `J2` as
+this document once implied — it only ever decided which **plug** to crimp for the `J101` end,
+and said nothing about where the other ends of the wires land on our board. The
+[fallback](#if-the-factory-plug-does-not-mate) then removed even that, because no plug gets
+crimped for `J101`: the factory one stays in place. The measurement is dead work now, which is
+a neat illustration of the fallback's real value — it does not identify the connector, it makes
+identifying it unnecessary.
 
 **`U3` is done: `electra:ESP32-C3_SUPERMINI_SMD` + `electra:MODULE_ESP32-C3_SUPERMINI`.**
 The module was the last thing resolving through a personal library folder, and its symbol,
@@ -2042,10 +2104,13 @@ INTERCOM TERMINAL BLOCK (Line OUT, unused)
    J2 pin 2 runs straight to J3 pin 2.
    De-energised = COM-NC closed = speaker connected = rings normally.
 
-   J2 = 1.25 mm housing + crimped terminals (PA-09) at the J101 end; at our end the
-        two wires feed through the Ø2.0 mm relief holes, then solder into the plated
-        Ø0.7 mm holes 9 mm away. Thread before soldering, not after.
-   J3 = 1.25 mm SMD vertical header on our board, the speaker's factory plug goes here
+   J2 = the intercom's FACTORY speaker lead, plug left in J101, desoldered at the
+        speaker end. Its two wires feed through the Ø2.0 mm relief holes, then solder
+        into the plated Ø0.7 mm holes 9 mm away. Thread before soldering, not after.
+        Sleeve it with heat-shrink first if it calipers under ~1.4 mm OD.
+   J3 = 1.25 mm SMD vertical header on our board; a kit plug crimped with the PA-09
+        goes here, on a NEW lead whose far end solders to the speaker's tabs.
+        (The factory plug does NOT mate the kit - fit-tested and failed.)
    Route the pair together and away from L1 and SW.
 
    ---- STATUS LED ----
@@ -2425,9 +2490,15 @@ Each step still verifies one thing. Do not skip ahead.
    `docs/perfboard.md`.
 8. **Transmit.** Press "Open door", line idle, and only once step 7 passed. **It unlocks
    the building door**, so know who is on the other side of it.
-9. **Speaker path last.** Fit the `J2` lead and the `J3` plug, arm Silent, ring, confirm
-   silence, then answer and confirm you can hear. This goes last because it is the only
-   step that touches the intercom's own wiring.
+9. **Speaker path last, and it now includes soldering.** This goes last because it is the only
+   step that permanently alters anything, and after the fit-test failure that means the
+   **speaker's own tabs**. In order: unplug `J101`, desolder the factory lead from the speaker
+   — low heat, quick, no pull on the tab, because the voice coil's tinsel usually lands on the
+   same tab — then caliper that lead, sleeve it if thin, thread it through `J2`'s relief holes
+   and solder it in. Crimp the new lead's `J3` plug, solder its far end to the speaker, plug
+   `J101` and `J3` back in. Then arm Silent, ring, confirm silence, answer and confirm you can
+   hear. Meter `J2` pin 1 to `J3` pin 1 again before reassembly if the board has been handled
+   since step 2.
 
 ## Permanent install
 

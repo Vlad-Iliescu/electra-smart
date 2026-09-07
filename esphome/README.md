@@ -189,15 +189,20 @@ why that 10 k matters given the part's 32 V Vceo.
 the terminal makes no sound at all during a call, so opening one leg of the speaker
 pair is all Silent needs to do.
 
-The speaker is on a small 2-pin plug at **`J101`**, measured ~1.08 mm at the pin
-centres and judged low, so most likely **1.25 mm** ("JST 1.25"). **The speaker plugs
-into our board**: a 1.25 mm SMD vertical header (`J3`) takes the speaker's own factory
-plug, and a short crimped lead (`J2`) runs from our board back to `J101`. The relay's
-COM->NC contact then sits in one conductor as a **PCB trace** rather than a splice in a
-thin cable. Nothing is crimped on the speaker side, nothing on the intercom is modified,
-and it is reversible by plugging the speaker straight back into `J101`. See
-[../docs/wiring.md](../docs/wiring.md) for how to confirm the pitch and for the one
-fit test to do before committing the footprint.
+The speaker is on a small 2-pin plug at **`J101`**, at **1.25 mm** pitch ("JST 1.25").
+**The factory plug stays in `J101`**: its lead is desoldered at the *speaker* end and
+soldered into our board at `J2`, and a **new** lead runs from our `J3` header to the
+speaker, with a plug crimped from the same kit as the header. The relay's COM->NC
+contact then sits in one conductor as a **PCB trace** rather than a splice in a thin
+cable.
+
+That is the fallback topology, and it is the one being built: **the fit-test failed.**
+1.25 mm is several non-intermating families, and the kit's header would not seat on the
+intercom's plug — the contacts lined up, the housing did not. So two solder joints land
+on the **speaker's tabs**. The intercom's board is still untouched and the factory lead
+stays one intact piece, so reverting is resoldering those two joints rather than
+splicing. See [../docs/wiring.md](../docs/wiring.md) for the full reasoning, the
+speaker-tab heat warning, and the `J2` strain-relief sleeve the change makes necessary.
 
 The unit has a **single dynamic loudspeaker** in the rear cover and no separate
 piezo buzzer, so the ring melody and the call audio share it. That is what makes

@@ -82,13 +82,23 @@ easy to place a caliper on:
 
 **Careful: 1.25 mm is not one family.** Genuine JST GH, Molex PicoBlade and the ubiquitous cheap
 "JST 1.25" sold for LiPo balance leads all share the pitch but differ in latch and polarisation, and
-they do not reliably intermate. Mass-produced consumer gear like this almost always uses the generic
-**"JST 1.25"** (PicoBlade-style), so that is the one to buy.
+they do not reliably intermate. **This was confirmed the hard way**: an SH-proportioned 1.25 mm clone
+header would not seat on the intercom's plug, with the contacts registering correctly and the housing
+refusing — so the pitch is right and the family is not.
 
-**Build note:** do not crimp anything at this pitch - it needs a dedicated crimp tool. Buy a ready-made
-2-pin **male-to-female extension cable**, cut it in the middle, and put the relay's COM->NC contact in
-one conductor. That gives a plug-in pass-through with no crimping and no modification to the intercom
-at all. Buying both 1.25 mm and 1.0 mm costs a few euros and settles the pitch question by fit.
+> **Both build notes below are superseded. Kept only because their reasoning is instructive.**
+> The guess that consumer gear "almost always uses generic PicoBlade-style" was never tested and is
+> now moot, because the final design never mates anything of the intercom's: the factory plug stays
+> in `J101` and both ends of the new speaker lead are ours. And the extension-cable trick was
+> replaced outright once the design moved to a PCB — the relay contact is a **PCB trace**, not a
+> splice, which removed the least reliable joint in the build. Crimping at this pitch also turned out
+> to be perfectly practical with an Engineer PA-09. See
+> [wiring.md](wiring.md#the-speaker-connector) for what is actually built.
+
+**Original build note:** do not crimp anything at this pitch - it needs a dedicated crimp tool. Buy a
+ready-made 2-pin **male-to-female extension cable**, cut it in the middle, and put the relay's COM->NC
+contact in one conductor. That gives a plug-in pass-through with no crimping and no modification to the
+intercom at all. Buying both 1.25 mm and 1.0 mm costs a few euros and settles the pitch question by fit.
 
 ### Manual details that corroborate our captures
 
