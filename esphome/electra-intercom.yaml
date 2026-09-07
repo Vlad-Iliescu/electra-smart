@@ -37,6 +37,12 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  # Reported to Home Assistant and printed in the boot banner. Bump it with every
+  # flash that matters: OTA has reported success here while the node carried on
+  # running the previous image, and a visible version is how that gets noticed.
+  project:
+    name: electra.intercom
+    version: "0.9.0-dev"
   on_boot:
     priority: -100
     then:

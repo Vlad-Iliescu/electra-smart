@@ -215,6 +215,49 @@ The C3 SuperMini has no USB-UART bridge, so the first flash and all logging go
 over native USB (`hardware_uart: USB_SERIAL_JTAG`). After the first flash,
 everything is OTA — the router is a few metres away with line of sight.
 
+### Make the first flash a factory image, and reset it with the watchdog
+
+Two things about native USB that cost an hour each the first time.
+
+**Flash the whole image at offset 0**, not just the application, so the bootloader,
+the partition table and the OTA data selector are all rewritten:
+
+```powershell
+esphome upload electra-intercom.yaml --device COM5 `
+  --file .esphome/build/electra-intercom/build/firmware.factory.bin
+```
+
+**Then reset it with the watchdog, not RTS.** esptool ends with `Hard resetting via
+RTS pin`, but on a USB-Serial-JTAG part that does not restart the chip — it stays in
+the ROM download stub, which is silent. The symptom is alarming and misleading: no
+log output at all, not even the ROM banner, no fallback AP, and `esphome logs`
+sitting there printing nothing. Confirm the diagnosis by connecting *without* a
+reset, which only succeeds if the chip is already in the bootloader:
+
+```powershell
+esptool --port COM5 --before no-reset --after no-reset read-mac
+```
+
+and then actually start the application with:
+
+```powershell
+esptool --port COM5 --after watchdog-reset read-mac
+```
+
+### Never trust "OTA successful"
+
+OTA on this project has reported success while the node carried on running the
+previous image, so the uploader's own message proves nothing. Ask the node what it
+is running instead — `compilation_time` and the `project.version` above both come
+from the running binary, and Home Assistant shows them in the device info.
+
+Measured 2026-09-07: on a module that had just taken a **factory image at offset 0**,
+OTA took correctly on the first try — pushed a build stamped `15:31:29`, and the node
+reported exactly that stamp plus the new `0.9.0-dev` version afterwards. The earlier
+repeated rollbacks were all on a module whose `ota_data` had never been rewritten,
+which points at stale slot-selection state as the cause. That is evidence, not proof,
+so keep bumping `project.version` on every flash that matters and keep checking it.
+
 Verified to compile clean on ESPHome 2026.7.4 / ESP-IDF 5.5.5: no warnings,
 RAM 33.7%, flash 53.9%. That build includes the mode button; before it the
 flash figure was 53.8%, so the button cost 0.1%.
