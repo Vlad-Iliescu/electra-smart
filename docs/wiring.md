@@ -727,6 +727,22 @@ library-to-sheet coordinate transform is just `x + px, y - py`, which removes th
 most likely source of a silently wrong netlist. **The layout is functional, not pretty** —
 rearrange it in Eeschema if you like, but rerunning the generator resets the positions.
 
+### Which Python runs which tool
+
+**Three interpreters, and choosing wrong fails with a bare `ModuleNotFoundError`** that
+says nothing about the real problem. There is no single environment that runs everything,
+because `pcbnew` and `cadquery` each only exist in one of them.
+
+| Tool group | Interpreter | Why |
+|---|---|---|
+| `gen_sch.py`, `check_net.py`, `check_libs.py`, `check_models.py` | any `python` | pure S-expression text handling, no binary deps |
+| anything importing **`pcbnew`** — every `vfy_*.py` except `vfy_height`, plus `fix_c8_silk.py`, `apply_sw1_trim.py`, `check_3d.py` | `"C:\Program Files\KiCad\10.0\bin\python.exe"` | `pcbnew` ships only inside KiCad |
+| anything importing **`cadquery`** — `model_sw1.py`, `model_jst125.py`, `model_lightpipe.py`, `vfy_height.py` | system `python` | `cadquery` 2.8.0 is installed there |
+| ESPHome build and flash | `.venv\Scripts\esphome.exe` | project venv, and it has no `cadquery` |
+
+Note the trap in the last two rows: the mech scripts want the **system** Python while the
+firmware wants the **venv**, which is the opposite of the usual instinct.
+
 ### Verifying it
 
 Four checks, all scriptable, and all four must pass:
@@ -2236,6 +2252,123 @@ it is tempting to tack it to the rail and be done. Do not. A permanent pull-up o
 shares, and it leaves a low-value path from a dead rail onto that bus. Gated on
 GPIO5, the same resistor is active only while we are actually sending a frame. Full
 reasoning in [Transmitting on C/D](#transmitting-on-cd-and-why-it-did-not-work-at-first).
+
+## The light pipe
+
+`LED1` fires straight up out of the board's top face, and the board mounts with that
+face toward the wall. The light therefore has to turn **90 degrees and travel out to
+the right**, to a hole in the case wall. Everything below is generated and checked by
+`pcb/tools/model_lightpipe.py`, which writes `mech/lightpipe_bracket.step` / `.stl`
+and reports its own clearances; `pcb/tools/vfy_lightpipe.py` prints the board
+measurements it is built from.
+
+**Note the interpreter.** The mech scripts need `cadquery` (2.8.0 here), which is
+installed in the *system* Python, not the project's `.venv`. Run them with `python`,
+not `.venv\Scripts\python.exe`, or they fail on `ModuleNotFoundError: cadquery`.
+This is the opposite of the ESPHome build, which wants the venv.
+
+### The route, and why it is not a straight line
+
+`SW1` is in the way. It sits on the right edge at 3.80 mm tall and straddles exactly
+`LED1`'s row, so the obvious straight run from the LED to the edge collides with it.
+The path instead **dog-legs in plan** to pass below the switch: a first leg angled
+30.96 degrees, then an equal turn back, with 1.66 mm of setback. A bend in plan costs
+no height whatsoever, which is why it is the cheap axis to spend here.
+
+Light leaves at board **(105.10, 77.90)**, standing 2.0 mm proud of the edge — the
+middle of the clear lane between `SW1`'s body (ending at y 76.01) and the board's
+bottom edge (79.91), about 6.3 mm below `SW1`'s plunger axis. Drill the case to match.
+
+### The bend maths, and the height budget
+
+`C6` is the tallest part on the board at **5.80 mm**, so the rule adopted was that the
+bracket must stay under it. Then the light pipe can never be the reason the case will
+not close — worth having while the cavity depth behind the board is still unmeasured.
+The bracket is deliberately **flat-topped** at that height rather than allowed to bulge.
+
+A bend costs height, and the amount is `R x (1 - cos θ)`. That is the whole reason the
+fibre enters at a shallow angle instead of turning the full corner in one go:
+
+| Turn | Height cost | At R = 6 mm |
+|---|---|---|
+| 90 deg | `1.000 R` | 6.00 mm — busts the budget on its own |
+| 45 deg | `0.293 R` | 1.76 mm |
+| 40 deg | `0.234 R` | **1.40 mm** — what is built |
+
+40 degrees rather than 45 because the number that has to fit the case is the
+*bracket's* height, not the fibre's: a 2.40 mm bore inside a 1.00 mm wall is 4.40 mm
+of stack sitting on top of an entry that must already clear the LED. Shaving the tilt
+is what brings the outer envelope under `C6` while leaving a printable roof over the
+bore. `--variants` sweeps the trade.
+
+The built geometry, with all seven clearance checks passing:
+
+```
+bend radius 6.00 mm, entry tilt 40.0 deg
+  entry face centre     z 2.666 mm
+  bend rises            1.404 mm (a 90 deg bend would cost 6.000)
+  axis levels out at    z 4.070 mm, fibre 3.070..5.070
+  centreline length     20.41 mm
+  fibre top under C6    0.730 mm spare      roof over the bore  0.530 mm
+  entry face to LED     0.300 mm            fibre to SW1 body   0.747 mm
+  hood clear of R10     0.760 mm            bbox Z  0.00..5.81
+```
+
+### The bend is measured, not calculated from a datasheet
+
+Published minimum bend radii for plastic optical fibre — commonly quoted as ten to
+twenty times the diameter, so 20-40 mm for 2 mm fibre — would rule this design out
+completely. They do not apply here, and the bench test is why: **the actual fibre
+reached 90 degrees inside roughly 5 mm of span with light still coming out of the far
+end.** Those published figures are written for clad communications fibre carrying a
+power budget over a long run, where bend loss is measured in dB and matters. This run
+is ~20 mm of end-glow fibre whose entire job is "is it lit, and what colour", so
+losing a large fraction of the light to the bend is of no consequence.
+
+**The design radius is 6.00 mm, not the 5 mm that was proven.** You establish where
+the floor is; you do not build on it.
+
+### The fallback, if the bend or the bore disappoints
+
+Two independent things could still go wrong, with different answers.
+
+If the **fibre** whitens, kinks or cracks at the bend, abandon bending and turn the
+light with a **polished 45 degree facet** instead: cut the end at 45 degrees, polish
+it, and the index step reflects the beam through a right angle by total internal
+reflection. It is a fussier thing to make by hand — the facet has to be flat and
+genuinely polished, and it must stay dry and clean to keep reflecting — which is
+precisely why bending was tried first.
+
+If the **printed bore** comes out badly, which for FDM means sag inside a horizontal
+hole, the v2 move is an **open lay-in channel plus a press-on cap**, not a smaller
+bore. The closed bore was chosen because it is inherently light-tight and needs no
+second part; a fibre flexible enough to take a 5 mm bend will push through a 6 mm one.
+
+### Making it
+
+Print in **opaque black PETG**. The bracket carries a light-tight hood over `LED1`
+(6.40 mm internal, clearing the 5050 package and its pads) and an M2 foot that shares
+mounting hole `H3` at (80.50, 76.51) — **so H3's screw now clamps the bracket too and
+needs to be about 1.5 mm longer.**
+
+Print `mech/lightpipe_coupon.stl` first. It is the entry end only, so it answers the
+two questions that would waste a full print: does the hood drop over `LED1` without
+fouling `R10`, and does the fibre push through the bore.
+
+Cut the fibre a little over the 20.41 mm centreline and trim at the exit. **Flat-sand
+and polish both ends**, then **frost only the exit end** so it reads as an even dot
+rather than a hot spot. The entry face is a plain perpendicular cut — the hood's seat
+holds it at the tilt so its own normal already points at the LED, so there is no
+angled polish to do at that end.
+
+### One gotcha in the preview render
+
+To eyeball the bracket in place, add a second model to `LED1`'s footprint in a throwaway
+copy of the board and render it. The rotation is **`(rotate (xyz 0 0 90))`, +90 to cancel
+`LED1`'s +90 placement, not -90**: KiCad applies a model's Z rotation with the opposite
+sign to the footprint's, so the intuitive value puts the bracket 180 degrees out and
+parks the foot on the wrong side of the board. The result is a render that looks
+entirely plausible and is wrong.
 
 ## Assembly order
 
