@@ -223,14 +223,31 @@ flash figure was 53.8%, so the button cost 0.1%.
 
 Both bit while getting the first build through, and neither is a code problem:
 
-- **Keep the build directory path short.** ESP-IDF's libsodium has deeply nested
-  source paths and the compile dies with `The filename or extension is too long`
-  under the default `esphome/.esphome/build/...`. Build somewhere shallow:
+- **`The filename or extension is too long` — set `CCACHE_BASEDIR`.** This is
+  `CreateProcess`'s 32,767-character *command line* limit, not `MAX_PATH`. ninja
+  keeps its own commands short by passing a response file, but `ccache` (4.12.1,
+  bundled with the ESP-IDF tools) expands that file back into a real command line
+  before it execs gcc, so the limit applies again. Exactly one file is big enough
+  to trip it: libsodium's `salsa20_xmm6-asm.S`, whose response file measures 33,503
+  characters — and it is dead code on RISC-V, so the build dies on an object that
+  would have been empty. Fix it by giving ccache a base directory, which makes it
+  rewrite absolute paths into shorter relative ones:
 
 ```powershell
-$env:ESPHOME_BUILD_PATH = "C:\b"
+$env:CCACHE_BASEDIR = "C:\"
 esphome compile electra-intercom.yaml
 ```
+
+  The obvious ways out do **not** work, so do not waste time on them. Setting
+  `IDF_CCACHE_ENABLE=0` makes things *worse*: ESPHome reads it correctly, but
+  ESP-IDF's `idf.py` declares that flag with a click `envvar`, so the variable
+  merely *existing* passes `-DCCACHE_ENABLE=1`. Unsetting it does not help either,
+  because ESPHome then enables ccache on its own after finding the binary on the
+  PATH it exports internally (`shutil.which("ccache")` from an ordinary shell
+  returns `None`, which is misleading). `CCACHE_DISABLE=1` still expands the
+  response file. Shortening the build path with `ESPHOME_BUILD_PATH` helps but is
+  not enough on its own — measured, it removes about 700 of the ~1,540 characters
+  that need to go.
 
 - **Avoid the Microsoft Store build of Python.** It virtualises `%LOCALAPPDATA%`
   into `AppData\Local\Packages\PythonSoftwareFoundation...\LocalCache\Local`, and
