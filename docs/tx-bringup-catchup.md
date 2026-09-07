@@ -27,6 +27,13 @@ that tack until a single 240 R part replaces both.
 (`CRCW0603240RJNEA`). The **gerbers still do not contain `R12` at all** — the PCB
 has not been re-laid. See the pending list.
 
+**Updated 2026-09-07 — the line above is superseded.** `R12` is placed and routed,
+the gerbers were re-exported as `pcb/gerbers/electra-intercom-gerbers-v0.9-2026-09-01.zip`,
+and **the boards are ordered from that set**. The intermediate `-2026-09-01-r12.zip`
+export is *not* the ordered set — it predates the `SW1` pad trim and still carries the
+0.190 mm boss clearance. It was deleted, and also unstaged from git so a stray commit
+cannot resurrect it. The perfboard still carries the 1 kΩ + 330 Ω pair.
+
 ## Already true before this window (do not re-prove)
 
 - Unit: Electra Touch Line VTM.3S402.ELB04, indoor terminal CAN ID **`0x0DF`**.
@@ -42,16 +49,23 @@ has not been re-laid. See the pending list.
 - Firmware: `electra_can` `pullup_pin` = GPIO5, driven high only in the TX
   window, high-Z with pulls disabled otherwise. Buttons: **Assist self-test**,
   **TX path self-test**, **Open door**.
-- `R12` was added in `design.py` (GPIO5–C/D). Schematic regenerated. **PCB was
-  not re-laid. Boards were not ordered.**
+- `R12` was added in `design.py` (GPIO5–C/D). Schematic regenerated. ~~PCB was
+  not re-laid. Boards were not ordered.~~ **Both done: routed 2026-09-01, boards
+  ordered from the `v0.9` gerbers.**
 - OTA often reports success and the node boots the previous image. USB flash at
   offset 0 worked. Firmware on the node may still be the 2026-08-25 11:11 +0300
-  USB image.
+  USB image. **Updated 2026-09-07: this did not reproduce on a module freshly given
+  a factory image at offset 0.** A spare SuperMini took an OTA first time and
+  reported back the pushed build's exact compile stamp. The suspicion is now stale
+  `ota_data` on the old module rather than anything in the firmware — see
+  *Never trust "OTA successful"* in `esphome/README.md` for the verification method.
 
 ## Lab rules (break these and the session goes sideways)
 
 - **Never USB 5 V and external 3V3 at once.** USB-only for serial.
-- **COM4** = `USB Serial Device`, Espressif `VID_303A` = SuperMini.
+- **COM4** = `USB Serial Device`, Espressif `VID_303A` = SuperMini. **The number is
+  not fixed** — it is per module and per port, and a spare enumerated as COM5. Match
+  on the `USB Serial Device` name, never on the number.
 - **COM3** = Intel AMT SOL on the PC. Not the board, not the Saleae. Do not open it.
 - Saleae: original Logic, id `EA4F1A9AD5D228EC`, Logic 2 MCP `127.0.0.1:10530`.
   **CH0 = C/D**. Late in this window **CH1 = GPIO5**. CH2 was stuck high (3V3 or
@@ -196,7 +210,13 @@ the table in `docs/wiring.md`.
 | `tools/can_decode.py <digital.csv>` | CRC-15, default 87.9 µs |
 | `tools/bit_timing.py <digital.csv> [bit_us] [t0] [t1]` | Skew |
 
-`ESPHOME_BUILD_PATH=C:\b` when compiling.
+`CCACHE_BASEDIR=C:\` when compiling, or the build dies on libsodium with
+`The filename or extension is too long`. `ESPHOME_BUILD_PATH=C:\b` was the older
+advice and does **not** fix it on its own. Reasoning in `esphome/README.md`.
+
+Flashing over USB needs `--after watchdog-reset`; esptool's RTS reset leaves a
+USB-Serial-JTAG part sitting silently in the ROM stub, which looks exactly like a
+dead board. Also in `esphome/README.md`.
 
 Successful 330 Ω capture lived in `%TEMP%\tx_330\` and `%TEMP%\assist_330\`, not
 under `docs/captures/`. Older proof captures: `docs/captures/tx_with_pullup/`,
@@ -212,13 +232,19 @@ under `docs/captures/`. Older proof captures: `docs/captures/tx_with_pullup/`,
    *Transmitting on C/D* section, and a fourth "will bite" item; two inverted
    claims about driving recessive were corrected there and in
    `reverse-engineering.md` E2. `perfboard.md` carries the assist decoder.
-   **Still outstanding: place and route `R12` on the PCB and re-export gerbers.**
-   Also note GPIO5 used to be listed as the fallback amber-LED pin; that fallback
-   was moved to GPIO4.
+   ~~Still outstanding: place and route `R12` on the PCB and re-export gerbers.~~
+   **Done 2026-09-01:** routed, DRC and parity clean, `v0.9` gerbers exported and
+   ordered. Also note GPIO5 used to be listed as the fallback amber-LED pin; that
+   fallback was moved to GPIO4.
 2. Strip bring-up diagnostics: `tx_no_ack`, `probe_tx_errors_`, per-500 ms TX
-   status logs.
-3. **OTA rollback** before the board is sealed. USB flash is the path that
-   actually takes.
+   status logs. **Deliberately deferred until the PCBs are brought up** — these are
+   exactly the instruments that diagnose a freshly reflowed board that will not
+   transmit. Strip them before the assembly is sealed into the wall.
+3. ~~**OTA rollback** before the board is sealed.~~ **Did not reproduce on a
+   factory-flashed module, 2026-09-07.** What survives is a practice rather than a
+   fix: give every board its first flash as a factory image at offset 0 over USB,
+   OTA after that, and confirm the compile stamp on the node instead of believing
+   the uploader.
 4. Older assembly: J2 wire OD, speaker fit-test, JST calipers, SW1 plunger,
    optional 12 V coil confirm.
 5. User confirmation that the 2026-08-28 open actually moved the lock.
