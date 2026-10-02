@@ -20,6 +20,16 @@ for seconds at a time.
 | Auto-open delay | number | 0-60 s, re-checks the call is still ringing before opening |
 | Bus idle / Call audio active | binary sensors | diagnostics |
 | Frames received / sent / failures / bus errors | sensors | diagnostics |
+| TX path self-test / Assist self-test / Relay self-test | buttons | bring-up aids, see below |
+
+Three diagnostic buttons exist only for bringing a board up and come out before the
+unit is sealed in. **TX path self-test** pulls `C/D` dominant for 20 ms and checks it
+recovers. **Assist self-test** times recessive recovery with the assist resistor idle
+and driven. **Relay self-test** energises `K1` for 5 s: the coil is otherwise only
+driven by a ring frame, so without it the energised state cannot be checked off the
+bus. It was what showed, on the first PCB, that `Q2` saturates and ~8 mA flows while
+the relay stays put, the reversed-coil finding in `docs/wiring.md` confirmed in metal.
+It bypasses the Silent arming, so a real ring during the 5 s would go unmuted.
 
 The physical mode button (`SW1`) is deliberately **not** an entity: each press cycles
 off → Silent → Auto-open → both → off by driving the same two template switches HA
@@ -149,9 +159,18 @@ VDD + 0.3 V absolute maximum and become the hazard rather than the protection.
 
 **`WS2812B`, not `SK6812`.** World Semi specifies the `WS2812B` at **3.3-5.5 V** in all
 packages, so it runs in spec directly off our only rail, and the `V6` revision explicitly
-optimises constant-current drive at 3.3 V. Every `SK6812` needs 3.5 V or more. The
-`chipset: WS2812` already in `electra-intercom.yaml` is therefore correct as written —
-check `rgb_order` if colours come out swapped.
+optimises constant-current drive at 3.3 V. Every `SK6812` needs 3.5 V or more.
+
+**Do not use `chipset: WS2812` with the V6 — set the bit timings explicitly.** Found on
+the first PCB, 2026-10-02: the LED came up full white and ignored every update, with
+continuity good from GPIO7 through `R10` to the pad and a clean 24-bit burst on the
+analyzer at each state change. The V6 datasheet tightens **T0H to 220-380 ns**; ESPHome's
+`WS2812` preset sends 400 ns, measured 420 ns on the pad, so the V6 read every 0 as a 1
+and latched `FF FF FF`. `electra-intercom.yaml` now carries `bit0_high: 300ns`,
+`bit0_low: 950ns`, `bit1_high: 750ns`, `bit1_low: 500ns`, mid-window for the V6 and
+within the older B's tolerances too. `chipset` and the explicit timings are mutually
+exclusive in the config, so the `chipset` line is gone. Still check `rgb_order` if colours
+come out swapped.
 
 ### Power
 
@@ -248,6 +267,15 @@ and then actually start the application with:
 ```powershell
 esptool --port COM5 --after watchdog-reset read-mac
 ```
+
+**`esphome logs` can sit silent on a healthy, running module.** Seen 2026-10-02 on the
+first PCB: the device enumerated, the app was up and on WiFi, and `esphome logs
+--device COM5` printed nothing for minutes. Opening the same port with pyserial and
+**DTR and RTS both deasserted before `open()`** streamed the log immediately. Do not
+read a quiet `esphome logs` as a dead board; check the native API (or just ping the
+node) first, and use a plain pyserial reader with DTR/RTS low when a USB log is needed.
+`esptool` could not reset the chip through the same port in that state either, which
+is the same symptom from the other side.
 
 ### Never trust "OTA successful"
 

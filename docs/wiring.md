@@ -1000,6 +1000,16 @@ wrong is what buried the vendor STEP models earlier.
 > in this footprint, carrying the marker dot. `design.py` already puts pin 1 on `SW` and pin 2
 > on the `3V3` output, so **do not flip `L1` in layout** to make a track shorter — it would
 > turn the winding's outer layer into an antenna on the noisiest node on the board.
+>
+> **At assembly, do not look for the silkscreen dot — on v0.9 it is clipped.** The footprint's
+> pin-1 dot lands at (99.27, 38.72), which is on top of `R1`'s pad 1, and the fab strips silk
+> off exposed copper, so expect a fragment or nothing. Use the geometry instead: **the `SW` pad
+> is the one further from the board edge, beside `R1` and `U1` pin 5; the `3V3` pad is the one
+> nearest the edge.** The part's printed **bar** (beside the "332" dash number) marks the start
+> lead, so the bar goes toward `R1`, unmarked side toward the edge. Verified against Coilcraft
+> doc 1529-3: *"Indicates direction of terminals and start (short) lead. Connect high dv/dt here
+> for lowest EMI."* On a future revision move the dot off `R1`'s pad, e.g. to the edge side of
+> pad 2 mirrored into a bar, or just swap to a chamfered outline corner.
 
 **`C6` is done as well: `electra:Capacitor_Panasonic_EEH-ZA_6.3x5.8`** — pads **3.2 x 1.6 mm on
 5.0 mm centres**, a 6.6 x 6.6 mm base with the chamfer on the pin 1 side, and the Ø6.3 mm can
@@ -1251,6 +1261,64 @@ the PCB rerouted through the coil-end row, and the gerbers regenerated. The 2026
 was destroyed; the `2026-08-23-relayfix` zip carried the fix, and has since been superseded
 in turn by **`v0.9`** once `R12` was placed — see [Fabrication](#fabrication) for which file
 to upload. De-energised now genuinely means speaker connected.
+
+> **Second relay finding, 29 Sep 2026, at first-board placement: the coil is driven backwards
+> against Omron's polarity mark, and the v0.9 boards carry it.** The G6K-2F-Y drawing in
+> `docs/datasheets/Omron G6K.pdf` (page 6, terminal arrangement, top view) marks the coil
+> **+ on pin 1 and − on pin 8**, with the note *"Check carefully the coil polarity of the
+> Relay."* `design.py` puts `COIL_HI` — `+U` through `R9` — on **pin 8** and `COIL_LO`, `Q2`'s
+> collector, on **pin 1**. That is the opposite of the marking.
+>
+> It matters because the G6K is a **polarised** relay: Omron's "moving loop" armature carries a
+> permanent magnet that supplies part of the operating flux, which is how a 100 mW coil pulls a
+> DPDT. Omron's own relay selector flags `G6K-2(F,G)(-Y)` with *"take note of coil polarity"*.
+> With the coil reversed the magnet works against the coil instead of with it, so the outcome
+> is somewhere between "operates late, with less contact force and no shock margin" and "does
+> not operate at all" — and the datasheet gives no reversed-polarity figures, so which of those
+> it is has to be measured. **The perfboard never had the relay, so the coil has never been
+> energised in this project.** The pending "optional 12 V coil confirmation" was not optional.
+>
+> **What is not affected:** the fail-safe. De-energised, the magnet and spring hold the armature
+> on the NC contacts regardless of how the coil is wired, so the speaker path — the state the
+> intercom lives in — is exactly as designed. Only the energised state, Silent during a ring, is
+> in question.
+>
+> **Confirmed on board 1, 2 Oct 2026.** The firmware's `Relay self-test` button (added for
+> exactly this, since the coil is otherwise only driven by a ring frame) held `Q2` on for 5 s
+> at 13.5 V on `+U`: `Q2`'s collector read 13.5 V idle (coil continuous) and 0 V during the
+> pulse (transistor saturated, ~8 mA through the coil), the supply did not flinch, and `K1`
+> neither clicked nor opened `J2.1`–`J3.1`. That is the "does not operate at all" end of the
+> range. The cut-and-jumper below is now being applied to board 1; the isolated-coil ramp
+> described next is done on the board after the cuts, when the coil is free of `D2`/`R9`/`Q2`.
+>
+> **Bench test, on a loose relay, before deciding anything.** Bench supply limited to 20 mA
+> (the coil draws 9.1 mA at 12 V). Omron's polarity is `+` pin 1, `−` pin 8; the board's is the
+> reverse. Ramp from 0 V each way and note where the relay pulls in — meter 3-4 closing, 2-3
+> opening. Spec must-operate at correct polarity is **≤ 9 V** (75 % of rated). The coil on the
+> board sees **12.12 V**. If the reversed pull-in is at or near that, or never comes, Silent
+> does not work on v0.9 as fabricated.
+>
+> **The v0.9 fix is cut-and-jumper, all on the top layer, all reachable with `K1` soldered**
+> (mapped by `pcb/tools/vfy_coil_route.py`). Pad 1 is fed from two directions and pad 8 from
+> one, so it is **three cuts and two jumpers**, `D2` untouched:
+> - cut `Q2.3` → `K1.1`, the horizontal 0.2 mm track at y 54.87 between x 85.5 and 88.0, left
+>   of the relay body;
+> - cut `D2.2` → `K1.1`, the diagonal from (90.26, 52.91) to (88.39, 54.78), at its upper end
+>   above the body;
+> - cut `R9.2` → `K1.8`, the vertical at x 95.82 between y 52.5 and 54.3, just outside the
+>   body's right edge;
+> - jumper `K1.1` toe → `D2.1` / `R9.2` (the `+U` side), and `K1.8` toe → `D2.2` / `Q2.3`.
+>
+> The two jumpers cross by `D2`, so use insulated 30 AWG. Do **not** flip `D2`: it sits across
+> the nets, not the pins, and stays cathode-to-`+U`. Do **not** rotate `K1` 180° as a shortcut —
+> that lands the coil on the unconnected NO pads and puts `+U` onto a speaker contact.
+>
+> **v1.0: swap the two pins in `design.py`** — `COIL_HI` to `K1.8`→`K1.1`, `COIL_LO` to
+> `K1.1`→`K1.8` — regenerate, re-route the two short tracks, and add the coil polarity to the
+> relay's `check_net` assertions so it cannot come back. The symbol `Relay:G6K-2` gave no
+> warning because the netlist addresses pads by number, which is also why the NC error above
+> got through: **for this relay, pin numbers are load-bearing in both directions, and the only
+> check that has ever caught anything is a meter on the part.**
 
 Both poles are wired in parallel on purpose — it halves contact resistance and adds
 redundancy on a low-level audio signal. The trade is deliberate: a contact that fails to
@@ -2285,6 +2353,19 @@ datasheet already specifies VIH as a flat **2.7 V** rather than 0.7 x VDD, so a 
 drives a 5 V-powered part directly from `V4` onwards. The widely repeated "you need a
 74AHCT125" applies to pre-2019 stock.
 
+**Data *timing* is the issue, and it bit on the first board (2 Oct 2026).** `LED1` came
+up full white at first power and ignored every state change. Continuity from the `U3`
+castellation through `R10` to the `DIN` pad was good, and the analyzer on the `LED_DIN` net
+showed a clean 24-bit burst per toggle — with a **420 ns** high for a 0 bit. The `V6` sheet
+in `docs/datasheets/` specifies **T0H 220-380 ns** (T1H 580-1000 ns, cycle ≥ 1.25 µs);
+ESPHome's `chipset: WS2812` preset sends 400/1000 ns. Past the T0H maximum, the `V6`
+decodes every 0 as a 1, and `FF FF FF` is full white, which is why even the boot-time
+"off" lit it. The firmware now sets `bit0_high: 300ns`, `bit0_low: 950ns`,
+`bit1_high: 750ns`, `bit1_low: 500ns` explicitly, and the LED went blue on the next OTA.
+Nothing on the board changed. Pinout was also re-verified against the sheet in passing:
+1 `VDD`, 2 `DOUT`, 3 `VSS`, 4 `DIN`, and the `V6` makes `DIN`/`DOUT` interchangeable and
+survives reverse power, so the LED is hard to fit wrongly in any way that matters.
+
 **The one real risk is revision, not part number.** `V5` datasheet PDFs still print
 3.7 - 5.3 V as the absolute maximum rating, and no AliExpress seller states which revision
 is in the bag. The PCN says the inventory switch began immediately and that old and new
@@ -2474,8 +2555,12 @@ Each step still verifies one thing. Do not skip ahead.
    offset 0 is the path that actually takes.
 5. **Exercise everything that does not need the bus, still with `C/D` disconnected.**
    `SW1` is a real button now rather than a jumper across GPIO10, so press it and confirm
-   each press advances the state and the status LED follows. Arm Silent and listen for the
-   relay. Run **TX path self-test**, which needs no bus and should PASS. Run **Assist
+   each press advances the state and the status LED follows. Press **Relay self-test** in
+   HA (or over the API) and listen for the relay: the coil is only ever driven by a ring
+   frame otherwise, so arming Silent alone proves nothing off the bus. The coil runs from
+   `+U`, so this needs the bench supply on `J1`, not USB. Meter `J2.1`–`J3.1` through the
+   5 s pulse: it must go open and come back. Run **TX path self-test**, which needs no bus
+   and should PASS. Run **Assist
    self-test** too: with `C/D` disconnected it should report **~2000 µs**, which is the
    documented not-connected signature and confirms the test itself is working before you
    rely on it later.
