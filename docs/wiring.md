@@ -1288,8 +1288,11 @@ to upload. De-energised now genuinely means speaker connected.
 > at 13.5 V on `+U`: `Q2`'s collector read 13.5 V idle (coil continuous) and 0 V during the
 > pulse (transistor saturated, ~8 mA through the coil), the supply did not flinch, and `K1`
 > neither clicked nor opened `J2.1`–`J3.1`. That is the "does not operate at all" end of the
-> range. The cut-and-jumper below is now being applied to board 1; the isolated-coil ramp
-> described next is done on the board after the cuts, when the coil is free of `D2`/`R9`/`Q2`.
+> range. **Bodge applied and verified the same day**: with the three cuts and three jumpers
+> below in place, the same 5 s `Relay self-test` pulse from the bench supply gave the click,
+> `J2.1`–`J3.1` went open for the duration (tone stopped) and closed again on release. Board 1
+> is now fully functional; the jumpers are fixed under UV mask. The reversed pull-in voltage
+> was never recorded — on the board it simply did not operate, which is answer enough.
 >
 > **Bench test, on a loose relay, before deciding anything.** Bench supply limited to 20 mA
 > (the coil draws 9.1 mA at 12 V). Omron's polarity is `+` pin 1, `−` pin 8; the board's is the
@@ -1300,16 +1303,24 @@ to upload. De-energised now genuinely means speaker connected.
 >
 > **The v0.9 fix is cut-and-jumper, all on the top layer, all reachable with `K1` soldered**
 > (mapped by `pcb/tools/vfy_coil_route.py`). Pad 1 is fed from two directions and pad 8 from
-> one, so it is **three cuts and two jumpers**, `D2` untouched:
+> one, so it is **three cuts and three jumpers**, `D2` untouched. (An earlier version of this
+> note said two jumpers; that was wrong, and it was caught at the bench on board 1. `Q2.3` and
+> `D2.2` had no track between them — their only junction *was* `K1` pad 1 — so once pad 1 is
+> isolated they are two islands and need joining to each other as well as to pad 8.)
 > - cut `Q2.3` → `K1.1`, the horizontal 0.2 mm track at y 54.87 between x 85.5 and 88.0, left
 >   of the relay body;
 > - cut `D2.2` → `K1.1`, the diagonal from (90.26, 52.91) to (88.39, 54.78), at its upper end
 >   above the body;
 > - cut `R9.2` → `K1.8`, the vertical at x 95.82 between y 52.5 and 54.3, just outside the
 >   body's right edge;
-> - jumper `K1.1` toe → `D2.1` / `R9.2` (the `+U` side), and `K1.8` toe → `D2.2` / `Q2.3`.
+> - jumper **A**: `K1.1` toe → `R9.2` (the `+U` side; `D2.1` is already on that node);
+> - jumper **B**: `K1.8` toe → `D2.2`;
+> - jumper **C**: `D2.2` → `Q2.3` (or `Q2.3` → `K1.8` toe, same node either way).
 >
-> The two jumpers cross by `D2`, so use insulated 30 AWG. Do **not** flip `D2`: it sits across
+> Jumper A crosses B/C by `D2`, so use insulated wire — 0.22 mm enamelled coil wire works
+> well, the enamel is the insulation and the ends are stripped by scraping or by burning
+> off in a fluxed solder blob on the iron. Verify afterwards: `K1.1` ↔ `R9.2` beeps,
+> `K1.8` ↔ `Q2.3` beeps, `K1.8` ↔ `D2.2` beeps, `K1.1` ↔ `K1.8` reads the coil (~1.3 kΩ). Do **not** flip `D2`: it sits across
 > the nets, not the pins, and stays cathode-to-`+U`. Do **not** rotate `K1` 180° as a shortcut —
 > that lands the coil on the unconnected NO pads and puts `+U` onto a speaker contact.
 >
