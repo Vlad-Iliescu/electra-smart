@@ -1313,9 +1313,15 @@ to upload. De-energised now genuinely means speaker connected.
 > the nets, not the pins, and stays cathode-to-`+U`. Do **not** rotate `K1` 180° as a shortcut —
 > that lands the coil on the unconnected NO pads and puts `+U` onto a speaker contact.
 >
-> **v1.0: swap the two pins in `design.py`** — `COIL_HI` to `K1.8`→`K1.1`, `COIL_LO` to
-> `K1.1`→`K1.8` — regenerate, re-route the two short tracks, and add the coil polarity to the
-> relay's `check_net` assertions so it cannot come back. The symbol `Relay:G6K-2` gave no
+> **v1.0 — done, 2 Oct 2026.** `COIL_HI` is now `K1.1` and `COIL_LO` is `K1.8`, the sheet
+> is regenerated (the diff is the two coil labels and nothing else), ERC is 0 and
+> `check_net.py` matches. `design.py` now carries module-level assertions on the coil
+> polarity, the `D2` direction and the 2/7-NC contact assignment, so the file refuses to
+> import if any of them drift. On the PCB the two coil routes cross, and both stayed on the
+> top layer with the footprint untouched: `COIL_HI` runs from `R9`/`D2` under the top of the
+> relay body to pin 1, `COIL_LO` from `Q2` through the gap between the pin-1 and pin-2 rows
+> to pin 8, with three `GND` vias re-stitching the pour. DRC 0 / parity 0, silk bumped to
+> `v1.0`, gerbers re-exported with paste layers identical to v0.9. The symbol `Relay:G6K-2` gave no
 > warning because the netlist addresses pads by number, which is also why the NC error above
 > got through: **for this relay, pin numbers are load-bearing in both directions, and the only
 > check that has ever caught anything is a meter on the part.**
@@ -1327,11 +1333,15 @@ to close would break the intercom.
 
 ## Fabrication
 
-**Upload `pcb/gerbers/electra-intercom-gerbers-v0.9-2026-09-01.zip`.** Every earlier zip is
-superseded: the 2026-08-20 one predates the relay contact fix, and `2026-08-23-relayfix`
-predates `R12`, without which the node can receive but cannot transmit. The board carries
-`v0.9` on the front silkscreen so a bare board can be identified later without opening a
-gerber viewer.
+**Upload `pcb/gerbers/electra-intercom-gerbers-v1.0-2026-10-02.zip`.** Every earlier zip is
+superseded: the 2026-08-20 one predates the relay contact fix, `2026-08-23-relayfix`
+predates `R12`, without which the node can receive but cannot transmit, and **`v0.9`
+(2026-09-01, the set the boards in hand were made from) drives the relay coil backwards**
+— see the second relay finding. v1.0 swaps the two coil tracks, adds three `GND` stitching
+vias beside them and changes nothing else: **both paste layers are byte-identical to v0.9,
+so the v0.9 stencil is still the right stencil.** The board carries its version on the
+front silkscreen so a bare board can be identified later without opening a gerber viewer:
+a `v0.9` board needs the three-cut / two-jumper bodge, a `v1.0` board does not.
 
 Board is **54.5 x 47.0 mm**, 2 layers, and the exported set is F.Cu, B.Cu, both masks, both
 pastes, both silkscreens, Edge.Cuts, plus separate PTH and NPTH Excellon drills.

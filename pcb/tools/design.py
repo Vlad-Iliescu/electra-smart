@@ -212,8 +212,16 @@ NETS = {
     'RELAY_EN': [('U3', '6', 'GPIO6'), ('R7', '1', None)],
     # R8 holds the base down so the relay cannot chatter while the ESP32 boots.
     'Q2_B': [('R7', '2', None), ('Q2', '1', 'B'), ('R8', '1', None)],
-    'COIL_LO': [('Q2', '3', 'C'), ('K1', '1', None), ('D2', '2', 'A')],
-    'COIL_HI': [('K1', '8', None), ('D2', '1', 'K'), ('R9', '2', None)],
+    # Coil polarity MEASURED on a loose part (2 Oct 2026) and on board 1: the
+    # G6K is a polarised relay and the Omron drawing (G6K.pdf p.6) marks the
+    # coil + on pin 1 and - on pin 8. v0.9 had them the other way round, Q2
+    # saturated and ~8 mA flowed, and the relay never moved; the same part on
+    # the bench operated with + on pin 1. COIL_HI (+U via R9) is pin 1,
+    # COIL_LO (Q2 collector) is pin 8. D2 stays cathode-to-COIL_HI. The symbol
+    # has no polarity on its coil pins, so this comment and the assertion
+    # below are the only guard.
+    'COIL_LO': [('Q2', '3', 'C'), ('K1', '8', None), ('D2', '2', 'A')],
+    'COIL_HI': [('K1', '1', None), ('D2', '1', 'K'), ('R9', '2', None)],
 
     'LED_DATA': [('U3', '7', 'GPIO7'), ('R10', '1', None)],
     'LED_DIN': [('R10', '2', None), ('LED1', '4', 'DIN')],
@@ -246,5 +254,21 @@ NO_CONNECT = (
     [('U3', p) for p in ('0', '1', '2', '3', '4', '8', '9', '5V')]
     + [('U2', '1'), ('LED1', '2'), ('K1', '4'), ('K1', '5')]
 )
+
+
+def _pins(net):
+    return {(r, p) for r, p, _ in NETS[net]}
+
+
+# K1 is polarised: + on pin 1, - on pin 8 (Omron G6K.pdf p.6). Measured wrong
+# on v0.9, so this is checked, not trusted. COIL_HI is the +U side.
+assert ('K1', '1') in _pins('COIL_HI') and ('K1', '8') in _pins('COIL_LO'), \
+    'K1 coil polarity: +U side (COIL_HI) must be pin 1, Q2 side (COIL_LO) pin 8'
+assert ('D2', '1') in _pins('COIL_HI') and ('D2', '2') in _pins('COIL_LO'), \
+    'D2 flyback: cathode (pin 1) on COIL_HI, anode (pin 2) on COIL_LO'
+# Contacts, measured 23 Aug 2026: NC = 2/7, COM = 3/6, NO = 4/5 open.
+assert {('K1', '2'), ('K1', '7')} <= _pins('SPK_SW'), 'K1 NC contacts are 2/7'
+assert {('K1', '3'), ('K1', '6')} <= _pins('SPK_HOT'), 'K1 COM contacts are 3/6'
+assert {('K1', '4'), ('K1', '5')} <= set(NO_CONNECT), 'K1 NO contacts 4/5 stay open'
 
 PAPER = 'A3'

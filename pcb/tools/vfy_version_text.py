@@ -1,11 +1,14 @@
-"""Is the v0.9 silk marking readable on a populated board?
+"""Is the version silk marking (v0.9, v1.0, ...) readable on a populated board?
 
 DRC catches silk over pads and mask, but not silk printed underneath a component
 body, which is the way a version marking usually becomes useless.
 """
 
+import re
+
 import pcbnew
 
+VERSION_RE = re.compile(r"^v\d+\.\d+")
 BRD = r"C:\dev\projects\HA\electra-smart\pcb\board\board.kicad_pcb"
 NM = 1e6
 
@@ -19,7 +22,7 @@ def main():
 
     target = None
     for d in b.GetDrawings():
-        if d.Type() == pcbnew.PCB_TEXT_T and d.GetText().startswith("v0"):
+        if d.Type() == pcbnew.PCB_TEXT_T and VERSION_RE.match(d.GetText()):
             target = d
     if target is None:
         print("no version text found")

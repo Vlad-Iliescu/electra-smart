@@ -6262,23 +6262,23 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 237.49) (xy 194.31 232.41)
+			(xy 194.31 252.73) (xy 194.31 257.81)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "7e5ab85a-7cc9-5500-827b-e76d0974e23d")
+		(uuid "6bb15d95-5a02-5c69-907d-6a904bdd2671")
 	)
 	(label "COIL_LO"
-		(at 194.31 232.41 90)
+		(at 194.31 257.81 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
-		(uuid "c598fc63-6098-57f5-9191-d47f5f0bcf8f")
+		(uuid "d8617ae0-9923-5ffb-a227-45d06f3e0b13")
 	)
 	(wire
 		(pts
@@ -6302,23 +6302,23 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 252.73) (xy 194.31 257.81)
+			(xy 194.31 237.49) (xy 194.31 232.41)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "6bb15d95-5a02-5c69-907d-6a904bdd2671")
+		(uuid "7e5ab85a-7cc9-5500-827b-e76d0974e23d")
 	)
 	(label "COIL_HI"
-		(at 194.31 257.81 270)
+		(at 194.31 232.41 90)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
-		(uuid "d8617ae0-9923-5ffb-a227-45d06f3e0b13")
+		(uuid "c598fc63-6098-57f5-9191-d47f5f0bcf8f")
 	)
 	(wire
 		(pts
