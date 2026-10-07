@@ -182,7 +182,8 @@ NETS = {
     # Recessive assist, and the reason transmitting did not work at all until it
     # existed. U2 is open-drain, so it can only sink; nothing on this board pulled
     # C/D back up, leaving that to the intercom's own pull-up. Measured on the
-    # wall, releasing the line takes ~44 us of an 87 us bit. Every dominant bit we
+    # wall, releasing the line takes ~44 us of an 87 us bit while the terminal is
+    # active, and ~600 us when it is at rest (7 Oct 2026). Every dominant bit we
     # sent overran its slot, so other nodes mis-sampled the frame and answered
     # with an error flag - which reads as "never acknowledged" from our side and
     # drove the controller bus-off on all 32 retries.

@@ -199,12 +199,16 @@ measure +6.2% skew while the self-test says 8 µs.
 | ~22 µs | 1 kΩ on the live bus. Too weak for this capacitance — TX will bus-off. Not a wrong part |
 | ~2000 µs | Line never recovered — `C/D` is not actually connected |
 
-Assist OFF should read **~44 µs**, which is the intercom's pull-up on its own and
-confirms you really are on the bus. Two OFF readings that mean something else:
-~600 µs is a high-resistance joint or extra capacitance — long Dupont crimps did
-exactly this — and a mean far above the worst-case spread (e.g. 155 µs mean with a
-611 µs worst over five rounds) is usually four good rounds plus one collision with
-real bus traffic, not a fault.
+Assist OFF is the intercom's pull-up on its own, and it has **two values, set by the
+terminal's state rather than by your wiring**: **~600 µs at rest** and **~45 µs while
+the handset is lifted or a session is running**. Confirmed on the PCB on 7 Oct 2026 —
+607 µs, then 46 µs in the one round that coincided with a handset lift, then 650 µs
+again the round after hanging up, with ON at 8–10 µs throughout. The 604–617 µs the
+perfboard read on 26 Aug and the ~44 µs it read a day later were the same thing seen
+in two states; the Dupont crimps blamed at the time were innocent. Either value
+confirms you are on the bus. ~2000 µs is still "not connected", and a mean far above
+the worst-case spread (e.g. 155 µs mean with a 611 µs worst over five rounds) is a
+state change or a collision with real traffic mid-run, not a fault.
 
 ### Then transmit
 

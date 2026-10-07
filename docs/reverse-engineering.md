@@ -535,6 +535,18 @@ adding 1 kΩ in parallel *halved* recovery from 44 to 22 µs, and only a resisto
 to what is already present can halve it. So a 1 kΩ assist could never be enough. It
 has to be well below the bus pull-up — 240 R gives 8 µs.
 
+**That pull-up is only there while the terminal is active (added 7 Oct 2026).** With the
+first PCB on the wall the assist self-test read OFF **607 µs** on a quiet bus, **46 µs**
+in the one round that coincided with lifting the handset, and **650 µs** the round after
+hanging up — ON stayed at 8–10 µs throughout. So the intercom switches its strong
+pull-up onto `C/D` when it goes active and leaves the line on something roughly 14×
+weaker at rest. Every August figure, including the 44 µs above and the 26 Aug reading of
+604–617 µs that was then blamed on Dupont crimps, fits that pattern. Two consequences:
+an un-assisted transmit at rest would not be half a bit late, it would be seven bits
+late; and the 28 Aug door frame was sent with the bus awake, so a door frame from a
+resting bus is a separate thing to prove, which the 240 R assist should make routine
+since its 8–10 µs does not depend on the state.
+
 With it, `0x0DF 02 07 01 00` transmitted clean: `CRC MATCH ACK`, `tx done`, TEC 0, and
 the panel replied `0x0DF 01 01 07` 26 ms later, which is the acknowledgement of open
 already catalogued in C3.

@@ -179,9 +179,13 @@ Sinks via GPIO21 / U2, times rise on GPIO20. One bit = 87 µs. Give-up = 2000 µ
 | 22 µs | 1 kΩ on the live bus. TX will bus-off |
 | 2000 µs | C/D not connected |
 
-OFF ~44 µs = intercom pull-up only, line is on the real bus. OFF ~600 µs = high-R
-joint or extra C (long Dupont crimps did this). OFF 155 mean / 611 worst over 5
-rounds = four good ~40 µs plus one collision.
+OFF ~44 µs = intercom pull-up only, **terminal active** (handset lifted / session).
+OFF ~600 µs = intercom pull-up only, **terminal at rest**. Same bus, same board —
+the intercom switches its strong pull-up in only when active. Established 7 Oct 2026
+on the PCB (607 → 46 → 650 µs across one handset lift, ON 8–10 µs throughout), which
+also re-reads the 26 Aug 604–617 µs: the bus was at rest, the Dupont crimps were not
+the cause. OFF 155 mean / 611 worst over 5 rounds = a state change or a collision
+mid-run.
 
 ## Recommended `R12` (not in the repo yet)
 

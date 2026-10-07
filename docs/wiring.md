@@ -2587,12 +2587,23 @@ Each step still verifies one thing. Do not skip ahead.
    rely on it later.
 6. **Connect `C/D`. Listen only.** Ring the panel and confirm the log shows `0x0DF`
    `04 03 01 00` and then `04 04`, matching the analyzer captures, with "Bus errors" staying
-   at zero — this is the bit-timing test. Then confirm the intercom still works completely
-   normally: call, answer, door, screen. That is what proves the node is electrically
-   invisible, and it is the check the whole staged approach existed to protect.
-7. **Assist self-test on the live bus, before transmitting anything.** OFF should read
-   ~44 µs and ON in the single digits of microseconds. Near 22 µs means the assist is too
-   weak for this bus and the frame will drive the controller bus-off. Decoder table in
+   at zero **between sessions** — this is the bit-timing test. Wrong timing shows as zero
+   frames, not as errors on an otherwise working decode. The counter *does* climb by
+   thousands during a call or monitoring, because a line held dominant for seconds is one
+   long stuff error to the controller; in listen-only that is harmless and expected (board 1
+   on the wall: 7.8 k → 32 k across two handset lifts, every frame CRC-valid). Then confirm
+   the intercom still works completely normally: call, answer, door, screen. That is what
+   proves the node is electrically invisible, and it is the check the whole staged approach
+   existed to protect.
+7. **Assist self-test on the live bus, before transmitting anything.** ON must read in the
+   single digits of microseconds; near 22 µs means the assist is too weak for this bus and
+   the frame will drive the controller bus-off. **OFF depends on what the intercom is
+   doing**, not on the wiring: ~600 µs with the terminal at rest, ~45 µs while the handset
+   is lifted or a session is running (board 1, 7 Oct 2026: 607 → 46 → 650 µs across one
+   handset lift, ON 8–10 µs throughout). The intercom only switches its strong pull-up onto
+   `C/D` when active, and leaves the line on something near 100 kΩ otherwise; the ~44 µs in
+   the `R12` note was measured mid-session. So a ~600 µs OFF on a quiet bus is **not** a bad
+   joint — lift the handset and re-run before touching anything. Decoder table in
    `docs/perfboard.md`.
 8. **Transmit.** Press "Open door", line idle, and only once step 7 passed. **It unlocks
    the building door**, so know who is on the other side of it.
