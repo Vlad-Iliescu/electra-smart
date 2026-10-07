@@ -2606,7 +2606,12 @@ Each step still verifies one thing. Do not skip ahead.
    joint — lift the handset and re-run before touching anything. Decoder table in
    `docs/perfboard.md`.
 8. **Transmit.** Press "Open door", line idle, and only once step 7 passed. **It unlocks
-   the building door**, so know who is on the other side of it.
+   the building door**, so know who is on the other side of it. Board 1 passed this on
+   7 Oct 2026 with the bus **at rest** (handset down, no ring): `tx done`, TEC 0, no bus
+   errors, and the lock buzzed with someone standing at it — the first time the lock
+   itself was watched rather than inferred from the panel's ack. The panel's `01 01 07`
+   reply was *not* seen in the 10 s log window this time, where in August it followed the
+   frame by 26 ms on an awake bus; the lock is the authority, so this is noted, not chased.
 9. **Speaker path last, and it now includes soldering.** This goes last because it is the only
    step that permanently alters anything, and after the fit-test failure that means the
    **speaker's own tabs**. In order: unplug `J101`, desolder the factory lead from the speaker

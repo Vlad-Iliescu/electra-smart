@@ -544,8 +544,11 @@ weaker at rest. Every August figure, including the 44 µs above and the 26 Aug r
 604–617 µs that was then blamed on Dupont crimps, fits that pattern. Two consequences:
 an un-assisted transmit at rest would not be half a bit late, it would be seven bits
 late; and the 28 Aug door frame was sent with the bus awake, so a door frame from a
-resting bus is a separate thing to prove, which the 240 R assist should make routine
-since its 8–10 µs does not depend on the state.
+resting bus was a separate thing to prove. **Proved the same day**: `Open door` from the
+PCB with the handset down and the bus idle went out as `tx done`, TEC 0, zero bus
+errors, and the lock buzzed with someone at the door. The panel's `01 01 07` reply did
+not appear in the log this time — possibly a resting-panel difference, possibly just
+outside the 10 s window — but the lock opening is the result that counts.
 
 With it, `0x0DF 02 07 01 00` transmitted clean: `CRC MATCH ACK`, `tx done`, TEC 0, and
 the panel replied `0x0DF 01 01 07` 26 ms later, which is the acknowledgement of open
