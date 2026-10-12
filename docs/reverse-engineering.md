@@ -575,7 +575,7 @@ was no prior art to compare against, which is part of why this took as long as i
 | Ring cleared | receive `0x0DF` + `04 04` (explicit call-end, so no timeout guessing; window ~59.7 s) |
 | Call answered elsewhere | receive `0x001` + `01 05 DF 00` |
 | Audio session active | receive `0x000` + `00 02`, or simply watch for the line going dominant |
-| Open the door | transmit `0x0DF` + `02 07 01 00`. **Confirmed working 2026-08-28**, but only with the recessive assist fitted (E2) |
+| Open the door | transmit `0x0DF` + `02 07 01 00` alone. **Confirmed 2026-08-28** with the recessive assist fitted (E2), and **confirmed on the lock 2026-10-07** from a resting bus. The panel's `01 01 07` and the following `00 02` are the panel's own replies, not frames we send |
 | Monitoring detected / triggered | receive or transmit `0x0DF` + `02 08 00` |
 | Silent | **relay contact in the speaker leg** - there is no MUTE frame (C13c) |
 
@@ -602,10 +602,10 @@ unit's own mute could be changed by a touch we cannot observe.
 Also worth noting the native mute stays available and independent - the operator can still long-touch
 button 3 - and the two do not conflict, they just both silence the speaker.
 
-Still to settle empirically in Phase 2 (safe, because CAN arbitration prevents jamming): whether
-`0x0DF` `02 07 01 00` alone opens the door, or the `01 01 07` / `00 02` follow-ups are also needed.
-A single-wire probe cannot attribute frames to senders; if we ever need certainty, probing the
-PIC18F25K80's **CANTX** pin on a second channel would show only what our terminal transmits.
+Settled 7 Oct 2026: `0x0DF` `02 07 01 00` alone opens the door. The node sent that one
+frame into a resting bus, the controller logged `tx done` with TEC 0, and the lock buzzed
+with someone standing at it. `01 01 07` and `00 02` are the panel answering, not part of
+what we transmit. The entity-level contract is in [developer.md](developer.md).
 
 ## F. Captures - all done
 

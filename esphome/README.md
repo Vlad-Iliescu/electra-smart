@@ -3,7 +3,8 @@
 Firmware for an ESP32-C3 that joins the Electra Touch Line `C/D` bus as a native
 CAN node, exposing the intercom to Home Assistant.
 
-The protocol work behind this lives in [../docs/reverse-engineering.md](../docs/reverse-engineering.md).
+The entity and frame contracts are in [../docs/developer.md](../docs/developer.md).
+The protocol work behind them lives in [../docs/reverse-engineering.md](../docs/reverse-engineering.md).
 The short version: `C/D` is a **single-wire CAN bus at ~11,364 bps**, and it also
 carries the **analog call audio**, which shows up as the line being held dominant
 for seconds at a time.
@@ -339,16 +340,18 @@ each one validates an assumption.
 
 1. **Listen only.** Flash as-is and watch the log. Ring the panel. You should see
    `ID=0x0DF` with `04 03 01 00`, then `04 04` about 60 s later, matching the
-   analyzer captures exactly. "Frames received" should climb and "Bus errors"
-   should stay at zero. **This is the bit-timing test** — wrong timing shows up as
-   zero frames or a climbing error count, not as subtly wrong data, because CAN
-   checks a CRC over every frame.
+   analyzer captures exactly. "Frames received" should climb. "Bus errors" stays
+   flat between calls and climbs during one, because a dominant hold is a long
+   stuff error; that climb is expected. **This is the bit-timing test** — wrong
+   timing shows up as zero frames, not as subtly wrong data, because CAN checks a
+   CRC over every frame.
 2. **Survive a call.** Answer a call and confirm the node logs no errors while the
    line is held dominant for the audio session, and that "Call audio active" goes
    on. Confirm the intercom's own audio is unaffected.
-3. **Transmit.** Press "Open door" with the line idle. If the door does not open,
-   the open announcement may need its follow-up frames (`01 01 07`, then `00 02`)
-   — see the open items in the plan.
+3. **Transmit.** Press "Open door" with the line idle. The single frame
+   `02 07 01 00` is sufficient: on 7 Oct 2026 it unlocked the door from a resting
+   bus, with no follow-up frames sent. It unlocks the building door, so know who
+   is on the other side of it.
 4. **Silent.** Arm Silent, have the panel call, confirm the ring is silent, then
    answer and confirm you can hear. This also tells us whether the ring melody and
    the voice share one emitter.
