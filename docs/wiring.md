@@ -2622,6 +2622,13 @@ Each step still verifies one thing. Do not skip ahead.
    hear. Meter `J2` pin 1 to `J3` pin 1 again before reassembly if the board has been handled
    since step 2.
 
+**Board 1 completed the whole sequence on 14 Oct 2026.** Speaker path fitted, and all three
+functions confirmed on the wall with the intercom's own `+U`: Silent mutes a real ring (so
+`K1` operates from the ~11 V the coil sees behind `R9`, not just the bench supply),
+Auto-open opens the door on a panel call, and the Open door button opens it on demand. The
+node is paired to Home Assistant; counters at that point read 6 frames sent, 0 transmit
+failures. This is the v0.9 board with the coil bodge; v1.0 needs none of it.
+
 ## Permanent install
 
 There is room behind the main PCB inside the case. Insulate everything with Kapton
